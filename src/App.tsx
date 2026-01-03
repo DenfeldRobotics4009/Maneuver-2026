@@ -32,7 +32,7 @@ import JSONDataTransferPage from "@/core/pages/JSONDataTransferPage";
 // import MatchStrategyPage from "@/pages/MatchStrategyPage";
 // import { AutoScoringPage, TeleopScoringPage } from "@/pages/ScoringPage";
 // import EndgamePage from "@/pages/EndgamePage";
-// import TeamStatsPage from "@/pages/TeamStatsPage";
+import TeamStatsPage from "@/core/pages/TeamStatsPage";
 // import PitScoutingPage from "@/pages/PitScoutingPage";
 // import PitAssignmentsPage from "@/pages/PitAssignmentsPage";
 // import PickListPage from "./pages/PickListPage";
@@ -42,6 +42,7 @@ import JSONDataTransferPage from "@/core/pages/JSONDataTransferPage";
 // import DevUtilitiesPage from "./pages/DevUtilitiesPage";
 // import { MatchValidationPage } from "./pages/MatchValidationPage";
 import { InstallPrompt } from '@/core/components/pwa/InstallPrompt';
+import { PWAUpdatePrompt } from '@/core/components/pwa/PWAUpdatePrompt';
 import { StatusBarSpacer } from '@/core/components/StatusBarSpacer';
 import { SplashScreen } from '@/core/components/SplashScreen';
 import { FullscreenProvider } from '@/core/contexts/FullscreenContext';
@@ -49,13 +50,35 @@ import { WebRTCProvider } from '@/core/contexts/WebRTCContext';
 import { WebRTCDataRequestDialog } from '@/core/components/webrtc/WebRTCDataRequestDialog';
 import { WebRTCPushedDataDialog } from '@/core/components/webrtc/WebRTCPushedDataDialog';
 import { WebRTCNotifications } from '@/core/components/webrtc/WebRTCNotifications';
+import { GameProvider } from "@/core/contexts/GameContext";
+import { strategyAnalysis } from "@/game-template/analysis";
+import { scoringCalculations } from "@/game-template/scoring";
+import { gameDataTransformation } from "@/game-template/transformation";
+import { StatusToggles } from "@/game-template/components";
 
-
+// Mock implementations for missing template parts
+const mockConfig = { year: 2025, gameName: "Template Game", scoring: { auto: {}, teleop: {}, endgame: {} } };
+const mockValidation = { getDataCategories: () => [], calculateAllianceStats: () => ({}), calculateAllianceScore: () => ({ auto: 0, teleop: 0, endgame: 0, total: 0 }), validateMatch: async () => ({} as any), getDefaultConfig: () => ({} as any) };
+const mockUI = { GameStartScreen: () => null, AutoScoringScreen: () => null, TeleopScoringScreen: () => null };
 
 function App() {
   const router = createBrowserRouter(
     createRoutesFromElements(
-      <Route path="/" element={<MainLayout />}>
+      <Route
+        path="/"
+        element={
+          <GameProvider
+            config={mockConfig as any}
+            scoring={scoringCalculations as any}
+            validation={mockValidation as any}
+            analysis={strategyAnalysis as any}
+            transformation={gameDataTransformation as any}
+            ui={{ ...mockUI, StatusToggles } as any}
+          >
+            <MainLayout />
+          </GameProvider>
+        }
+      >
         <Route index element={<HomePage />} />
         <Route path="/game-start" element={<GameStartPage />} />
         <Route path="/auto-start" element={<AutoStartPage />} />
@@ -66,7 +89,7 @@ function App() {
         <Route path="/pit-scouting" element={<PitScoutingPage />} />
         <Route path="/api-data" element={<APIDataPage />} />
         <Route path="/json-transfer" element={<JSONDataTransferPage />} />
-        
+
         {/* GAME-SPECIFIC ROUTES: Uncomment and implement these in your game implementation */}
         {/* <Route path="/parse-data" element={<ParseDataPage />} /> */}
         {/* <Route path="/qr-data-transfer" element={<QRDataTransferPage />} /> */}
@@ -77,7 +100,7 @@ function App() {
         {/* <Route path="/auto-scoring" element={<AutoScoringPage />} /> */}
         {/* <Route path="/teleop-scoring" element={<TeleopScoringPage />} /> */}
         {/* <Route path="/endgame" element={<EndgamePage />} /> */}
-        {/* <Route path="/team-stats" element={<TeamStatsPage />} /> */}
+        <Route path="/team-stats" element={<TeamStatsPage />} />
         {/* <Route path="/pit-scouting" element={<PitScoutingPage />} /> */}
         {/* <Route path="/pit-assignments" element={<PitAssignmentsPage />} /> */}
         {/* <Route path="/strategy-overview" element={<StrategyOverviewPage />} /> */}
@@ -86,7 +109,7 @@ function App() {
         {/* <Route path="/scout-management" element={<ScoutManagementDashboardPage />} /> */}
         {/* <Route path="/achievements" element={<AchievementsPage />} /> */}
         {/* <Route path="/dev-utilities" element={<DevUtilitiesPage />} /> */}
-        
+
         {/* Add more routes as needed */}
         <Route path="*" element={<NotFoundPage />} />
       </Route>
@@ -96,7 +119,7 @@ function App() {
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
-    
+
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js");
     }
@@ -117,7 +140,7 @@ function App() {
         analytics.debug();
         // Make analytics available globally for testing
         (window as typeof window & { analytics: typeof analytics }).analytics = analytics;
-        
+
         // GAME-SPECIFIC: Uncomment these in your game implementation
         // Make achievement functions available globally for debugging
         // import('./lib/achievementUtils').then(achievementUtils => {
@@ -169,7 +192,7 @@ function App() {
     }
 
   }, []);
-  
+
   if (showSplash) {
     return <SplashScreen onComplete={() => setShowSplash(false)} />;
   }
@@ -181,6 +204,7 @@ function App() {
           <div className="min-h-screen bg-background">
             <RouterProvider router={router} />
             <InstallPrompt />
+            <PWAUpdatePrompt />
             <StatusBarSpacer />
             <WebRTCDataRequestDialog />
             <WebRTCPushedDataDialog />

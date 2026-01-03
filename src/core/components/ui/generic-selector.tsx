@@ -3,6 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/core/components/ui/sheet";
 import { ChevronDownIcon } from "lucide-react";
 import { useIsMobile } from "@/core/hooks/use-mobile";
+import { cn } from "@/core/lib/utils";
 
 interface GenericSelectorProps {
   label: string;
@@ -15,9 +16,9 @@ interface GenericSelectorProps {
   className?: string;
 }
 
-export const GenericSelector = ({ 
-  label, 
-  value, 
+export const GenericSelector = ({
+  label,
+  value,
   availableOptions,
   onValueChange,
   placeholder = "Select option",
@@ -38,8 +39,8 @@ export const GenericSelector = ({
     return (
       <Sheet>
         <SheetTrigger asChild>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className={`w-full justify-between h-10 ${className}`}
           >
             <span className="truncate">
@@ -48,28 +49,40 @@ export const GenericSelector = ({
             <ChevronDownIcon className="h-4 w-4 opacity-50" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="bottom" className="h-[60vh] pb-8">
-          <SheetHeader>
-            <SheetTitle>{label}</SheetTitle>
-          </SheetHeader>
-          <div className="flex-1 overflow-y-auto px-4">
+        <SheetContent side="bottom" className="h-[75vh] p-0 flex flex-col rounded-t-3xl border-border bg-background overflow-hidden">
+          <div className="px-6 pt-5 pb-1">
+            <SheetHeader className="text-left">
+              <SheetTitle className="text-xl font-bold tracking-tight text-foreground">{label}</SheetTitle>
+            </SheetHeader>
+          </div>
+          <div className="flex-1 overflow-y-auto px-5 pb-10 mt-3">
             <div className="space-y-2">
               {availableOptions.includes("none") && (
                 <SheetClose asChild>
-                  <Button 
-                    variant={value === "none" ? "default" : "outline"}
-                    className="w-full justify-start h-12 px-4"
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start h-14 px-5 text-base font-medium rounded-xl border-border transition-all text-left",
+                      value === "none"
+                        ? "bg-primary text-primary-foreground dark:bg-primary dark:text-primary-foreground hover:opacity-90 active:scale-[0.98]"
+                        : "bg-muted/30 text-muted-foreground hover:bg-muted/50 dark:bg-muted/10 dark:text-muted-foreground"
+                    )}
                     onClick={() => onValueChange("none")}
                   >
-                    {displayFormat("none")}
+                    {displayFormat("none") === "none" ? "No team" : displayFormat("none")}
                   </Button>
                 </SheetClose>
               )}
               {availableOptions.includes("all") && (
                 <SheetClose asChild>
-                  <Button 
-                    variant={value === "all" ? "default" : "outline"}
-                    className="w-full justify-start h-12 px-4"
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start h-14 px-5 text-base font-medium rounded-xl border-border transition-all text-left",
+                      value === "all"
+                        ? "bg-primary text-primary-foreground dark:bg-primary dark:text-primary-foreground hover:opacity-90 active:scale-[0.98]"
+                        : "bg-muted/30 text-muted-foreground hover:bg-muted/50 dark:bg-muted/10 dark:text-muted-foreground"
+                    )}
                     onClick={() => onValueChange("all")}
                   >
                     All events
@@ -78,12 +91,20 @@ export const GenericSelector = ({
               )}
               {availableOptions.filter(option => option !== "all" && option !== "none").map((option) => (
                 <SheetClose key={option} asChild>
-                  <Button 
-                    variant={value === option ? "default" : "outline"}
-                    className="w-full justify-start h-12 px-4"
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start h-14 px-5 text-base font-medium rounded-xl border-border transition-all text-left",
+                      value === option
+                        ? "bg-primary text-primary-foreground dark:bg-primary dark:text-primary-foreground hover:opacity-90 active:scale-[0.98]"
+                        : "bg-muted/30 text-muted-foreground hover:bg-muted/50 dark:bg-muted/10 dark:text-muted-foreground"
+                    )}
                     onClick={() => onValueChange(option)}
                   >
-                    {displayFormat(option)}
+                    {/* Prefix with "Team " if it looks like a team number and not already formatted */}
+                    {option.match(/^\d+$/) && !displayFormat(option).includes("Team")
+                      ? `Team ${displayFormat(option)}`
+                      : displayFormat(option)}
                   </Button>
                 </SheetClose>
               ))}
@@ -96,8 +117,8 @@ export const GenericSelector = ({
 
   // Desktop version
   return (
-    <Select 
-      value={value || "none"} 
+    <Select
+      value={value || "none"}
       onValueChange={onValueChange}
     >
       <SelectTrigger className={`h-10 w-full ${className}`}>

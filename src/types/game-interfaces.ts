@@ -8,7 +8,7 @@
  * See FRAMEWORK_DESIGN.md for detailed documentation.
  */
 
-import type * as React from 'react';
+import * as React from 'react';
 import type { ScoutingEntryBase } from './scouting-entry';
 
 /**
@@ -297,6 +297,42 @@ export interface StrategyAnalysis<T extends ScoutingEntryBase> {
    * Teams can implement additional analysis methods as needed.
    */
   calculateAdvancedStats?(entries: T[]): AdvancedTeamStats;
+
+  // ========== DISPLAY CONFIGURATION ==========
+  // These methods define how the Team Statistics page renders stats.
+  // The framework calls these to build the UI dynamically.
+
+  /**
+   * Get stat sections to display on the Team Statistics page.
+   * Each section appears as a card with stat values.
+   * 
+   * @returns Array of stat section definitions
+   */
+  getStatSections(): import('./team-stats-display').StatSectionDefinition[];
+
+  /**
+   * Get rate sections to display (progress bars).
+   * Used for Key Rates, Climb Breakdown, etc.
+   * 
+   * @returns Array of rate section definitions
+   */
+  getRateSections(): import('./team-stats-display').RateSectionDefinition[];
+
+  /**
+   * Get match badges to show in match-by-match performance list.
+   * These are game-specific indicators like "Climbed", "Broke Down".
+   * 
+   * @returns Array of match badge definitions
+   */
+  getMatchBadges(): import('./team-stats-display').MatchBadgeDefinition[];
+
+  /**
+   * Get start position configuration for the Auto tab.
+   * Defines number of positions and optional field image.
+   * 
+   * @returns Start position configuration
+   */
+  getStartPositionConfig(): import('./team-stats-display').StartPositionConfig;
 }
 
 /**
@@ -367,25 +403,17 @@ export interface PredictionSystem {
   }>>;
 }
 
-/**
- * Interface 7: UIComponents
- * 
- * Game-specific React components for the scouting flow.
- * 
- * FULL FLOW: GameStart → [AutoStart] → Auto Scoring → Teleop Scoring → [Endgame] → back to GameStart
- * MINIMAL FLOW: GameStart → Auto Scoring → Teleop Scoring → back to GameStart
- * 
- * NOTE: Teams can implement these as props-based components OR as React Router pages.
- * The 2025 implementation uses React Router with location state for data passing.
- * 
- * COMMENTS: If EndgameScreen is omitted, add a comments field to TeleopScoringScreen
- */
 export interface UIComponents<T extends ScoutingEntryBase> {
   GameStartScreen: React.ComponentType<GameStartScreenProps>;
   AutoStartScreen?: React.ComponentType<AutoStartScreenProps>; // OPTIONAL - not all teams scout starting position
   AutoScoringScreen: React.ComponentType<ScoringScreenProps<T>>;
   TeleopScoringScreen: React.ComponentType<ScoringScreenProps<T>>;
   EndgameScreen?: React.ComponentType<ScoringScreenProps<T>>; // OPTIONAL - endgame data may come from TBA API
+  StatusToggles: React.ComponentType<{
+    phase: 'auto' | 'teleop' | 'endgame';
+    status: any;
+    onStatusUpdate: (updates: any) => void;
+  }>;
 }
 
 /**
@@ -404,7 +432,7 @@ export interface GameStartScreenProps {
       confidence?: number; // 0-5, for dynamic stakes
     };
   }) => void;
-  
+
   // Optional: Existing prediction for this match (if scout already made one)
   existingPrediction?: {
     predictedWinner: 'red' | 'blue' | 'none';

@@ -3,9 +3,12 @@
  * All year-agnostic types that define the framework's data structures.
  */
 
-// Scouting entry types (from core/types/scouting-entry.ts)
+// Scouting entry types (from scouting-entry.ts and core/types/scouting-entry.ts)
 export type {
   ScoutingEntryBase,
+} from './scouting-entry';
+
+export type {
   ScoutingDataExport,
   ImportResult,
   DBStats,
@@ -49,6 +52,7 @@ export type {
   ValidationConfig as GameValidationConfig,
   ValidationThresholds as GameValidationThresholds,
   AllianceStats,
+  DataTransformation,
 } from './game-interfaces';
 
 // Database schema types (from database.ts)
@@ -89,3 +93,14 @@ export type {
 export type {
   TeamStats,
 } from './strategy';
+
+// Team stats display configuration types (from team-stats-display.ts)
+export type {
+  StatSectionDefinition,
+  StatDefinition,
+  RateSectionDefinition,
+  RateDefinition,
+  MatchBadgeDefinition,
+  StartPositionConfig,
+  TeamStatsDisplayConfig,
+} from './team-stats-display';

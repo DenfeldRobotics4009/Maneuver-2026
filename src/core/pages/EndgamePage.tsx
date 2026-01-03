@@ -8,11 +8,12 @@ import { Label } from "@/core/components/ui/label";
 import { toast } from "sonner";
 import { ArrowRight } from "lucide-react";
 import { db } from "@/core/db/database";
-import { StatusToggles } from "@/game-template/components";
-import { gameDataTransformation } from "@/game-template/transformation";
 import { clearScoutingLocalStorage } from "@/core/lib/utils";
+import { useGame } from "@/core/contexts/GameContext";
 
 const EndgamePage = () => {
+  const { ui, transformation } = useGame();
+  const { StatusToggles } = ui;
   const location = useLocation();
   const navigate = useNavigate();
   const states = location.state;
@@ -55,11 +56,11 @@ const EndgamePage = () => {
       const matchType = states?.inputs?.matchType || "qm";
       const teamNumberStr = states?.inputs?.selectTeam || "";
       const allianceColor = states?.inputs?.alliance || "red";
-      
+
       // Build matchKey based on matchType
       let matchKey: string;
       let matchNumber: number;
-      
+
       if (matchType === "qm") {
         // Qualification match: qm24
         matchKey = `qm${matchNumberStr}`;
@@ -79,7 +80,7 @@ const EndgamePage = () => {
       }
 
       // Transform action arrays to counter fields using game-specific transformation
-      const transformedGameData = gameDataTransformation.transformActionsToCounters({
+      const transformedGameData = transformation.transformActionsToCounters({
         autoActions,
         teleopActions,
         autoRobotStatus,

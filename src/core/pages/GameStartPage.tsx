@@ -37,18 +37,18 @@ const GameStartPage = () => {
   const parsePlayerStation = () => {
     const playerStation = localStorage.getItem("playerStation");
     if (!playerStation) return { alliance: "", teamPosition: 0 };
-    
+
     if (playerStation === "lead") {
       return { alliance: "", teamPosition: 0 };
     }
-    
+
     const parts = playerStation.split("-");
     if (parts.length === 2 && parts[1]) {
       const alliance = parts[0];
       const position = parseInt(parts[1]);
       return { alliance, teamPosition: position };
     }
-    
+
     return { alliance: "", teamPosition: 0 };
   };
 
@@ -58,7 +58,7 @@ const GameStartPage = () => {
     if (states?.inputs?.matchNumber) {
       return states.inputs.matchNumber;
     }
-    
+
     const storedMatchNumber = localStorage.getItem("currentMatchNumber");
     return storedMatchNumber || "1";
   };
@@ -136,7 +136,7 @@ const GameStartPage = () => {
       if (rescoutEventKey) {
         setEventName(rescoutEventKey);
       }
-      
+
       // Single team or batch mode
       if (rescoutTeam) {
         setSelectTeam(rescoutTeam);
@@ -150,7 +150,7 @@ const GameStartPage = () => {
   // Function to handle prediction changes and save them immediately
   const handlePredictionChange = async (newPrediction: "red" | "blue" | "none") => {
     setPredictedWinner(newPrediction);
-    
+
     const currentScout = getCurrentScout();
     if (newPrediction !== "none" && currentScout && eventName && matchNumber) {
       try {
@@ -273,7 +273,7 @@ const GameStartPage = () => {
         <h1 className="text-2xl font-bold pb-4">Game Start</h1>
       </div>
       <div className="flex flex-col items-center gap-6 max-w-2xl w-full flex-1 pb-8 md:pb-4">
-        
+
         {!currentScout && (
           <Card className="w-full border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20">
             <CardContent>
@@ -316,7 +316,7 @@ const GameStartPage = () => {
             )}
           </CardHeader>
           <CardContent className="space-y-6">
-            
+
             <div className="space-y-2">
               <Label>Event Name/Code</Label>
               <div className={isRescoutMode ? "opacity-50 pointer-events-none" : ""}>
@@ -383,14 +383,13 @@ const GameStartPage = () => {
                   variant={alliance === "red" ? "default" : "outline"}
                   onClick={() => setAlliance("red")}
                   disabled={isRescoutMode}
-                  className={`h-12 text-lg font-semibold ${
-                    alliance === "red" 
-                      ? "bg-red-500 hover:bg-red-600 text-white" 
+                  className={`h-12 text-lg font-semibold ${alliance === "red"
+                      ? "bg-red-500 hover:bg-red-600 text-white"
                       : "hover:bg-red-50 hover:text-red-600 hover:border-red-300"
-                  } ${isRescoutMode ? 'cursor-not-allowed' : ''}`}
+                    } ${isRescoutMode ? 'cursor-not-allowed' : ''}`}
                 >
-                  <Badge 
-                    variant={alliance === "red" ? "secondary" : "destructive"} 
+                  <Badge
+                    variant={alliance === "red" ? "secondary" : "destructive"}
                     className={`w-3 h-3 p-0 mr-2 ${alliance === "red" ? "bg-white" : "bg-red-500"}`}
                   />
                   Red Alliance
@@ -399,14 +398,13 @@ const GameStartPage = () => {
                   variant={alliance === "blue" ? "default" : "outline"}
                   onClick={() => setAlliance("blue")}
                   disabled={isRescoutMode}
-                  className={`h-12 text-lg font-semibold ${
-                    alliance === "blue" 
-                      ? "bg-blue-500 hover:bg-blue-600 text-white" 
+                  className={`h-12 text-lg font-semibold ${alliance === "blue"
+                      ? "bg-blue-500 hover:bg-blue-600 text-white"
                       : "hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300"
-                  } ${isRescoutMode ? 'cursor-not-allowed' : ''}`}
+                    } ${isRescoutMode ? 'cursor-not-allowed' : ''}`}
                 >
-                  <Badge 
-                    variant={alliance === "blue" ? "secondary" : "default"} 
+                  <Badge
+                    variant={alliance === "blue" ? "secondary" : "default"}
                     className={`w-3 h-3 p-0 mr-2 ${alliance === "blue" ? "bg-white" : "bg-blue-500"}`}
                   />
                   Blue Alliance
@@ -427,11 +425,10 @@ const GameStartPage = () => {
                   variant={predictedWinner === "red" ? "default" : "outline"}
                   onClick={() => handlePredictionChange("red")}
                   disabled={isRescoutMode}
-                  className={`h-10 text-sm font-medium ${
-                    predictedWinner === "red" 
-                      ? "bg-red-500 hover:bg-red-600 text-white" 
+                  className={`h-10 text-sm font-medium ${predictedWinner === "red"
+                      ? "bg-red-500 hover:bg-red-600 text-white"
                       : "hover:bg-red-50 hover:text-red-600 hover:border-red-300"
-                  }`}
+                    }`}
                 >
                   Red Wins
                 </Button>
@@ -439,11 +436,10 @@ const GameStartPage = () => {
                   variant={predictedWinner === "blue" ? "default" : "outline"}
                   onClick={() => handlePredictionChange("blue")}
                   disabled={isRescoutMode}
-                  className={`h-10 text-sm font-medium ${
-                    predictedWinner === "blue" 
-                      ? "bg-blue-500 hover:bg-blue-600 text-white" 
+                  className={`h-10 text-sm font-medium ${predictedWinner === "blue"
+                      ? "bg-blue-500 hover:bg-blue-600 text-white"
                       : "hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300"
-                  }`}
+                    }`}
                 >
                   Blue Wins
                 </Button>
@@ -492,7 +488,7 @@ const GameStartPage = () => {
             onClick={handleStartScouting}
             className="flex-2 h-12 text-lg font-semibold"
             disabled={
-              isRescoutMode 
+              isRescoutMode
                 ? false  // In re-scout mode, fields are pre-filled so always allow
                 : (!matchNumber || !alliance || !selectTeam || !currentScout || !eventName)
             }

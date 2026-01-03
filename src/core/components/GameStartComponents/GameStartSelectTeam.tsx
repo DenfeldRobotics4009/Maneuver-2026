@@ -30,30 +30,30 @@ const InitialSelectTeam = ({
     try {
       const matchDataStr = localStorage.getItem("matchData");
       const matchData = matchDataStr ? JSON.parse(matchDataStr) : [];
-      
+
       // Check if matchData is valid
       if (!Array.isArray(matchData) || matchData.length === 0) {
         return ["0001", "0002", "0003"];
       }
-      
+
       // Get the correct match data
       let matchIndex = parseInt(selectedMatch) - 1;
       if (isNaN(matchIndex) || matchIndex < 0 || matchIndex >= matchData.length) {
         matchIndex = 0; // Default to first match if index is invalid
       }
-      
+
       const currentMatch = matchData[matchIndex];
-      
+
       // Convert alliance value to correct property name and get teams
       if (currentMatch && typeof currentMatch === 'object') {
-        const allianceKey = selectedAlliance === "red" ? "redAlliance" : 
-                           selectedAlliance === "blue" ? "blueAlliance" : "redAlliance";
+        const allianceKey = selectedAlliance === "red" ? "redAlliance" :
+          selectedAlliance === "blue" ? "blueAlliance" : "redAlliance";
         const teams = currentMatch[allianceKey];
         if (Array.isArray(teams) && teams.length > 0) {
           return teams;
         }
       }
-      
+
       return ["0001", "0002", "0003"];
     } catch {
       return ["0001", "0002", "0003"];
@@ -66,14 +66,14 @@ const InitialSelectTeam = ({
     if (defaultSelectTeam) {
       return {
         team1: defaultSelectTeam === baseTeams[0],
-        team2: defaultSelectTeam === baseTeams[1], 
+        team2: defaultSelectTeam === baseTeams[1],
         team3: defaultSelectTeam === baseTeams[2],
-        custom: defaultSelectTeam !== baseTeams[0] && 
-                defaultSelectTeam !== baseTeams[1] && 
-                defaultSelectTeam !== baseTeams[2]
+        custom: defaultSelectTeam !== baseTeams[0] &&
+          defaultSelectTeam !== baseTeams[1] &&
+          defaultSelectTeam !== baseTeams[2]
       };
     }
-    
+
     // If there's a preferred team position, auto-select that team
     if (preferredTeamPosition >= 1 && preferredTeamPosition <= 3) {
       return {
@@ -83,7 +83,7 @@ const InitialSelectTeam = ({
         custom: false
       };
     }
-    
+
     // Default - no selection
     return {
       team1: false,
@@ -105,13 +105,13 @@ const InitialSelectTeam = ({
   const [customTeamValue, setCustomTeamValue] = useState(
     initialSelection.custom && defaultSelectTeam ? defaultSelectTeam : ""
   );
-  
+
   // Sync customTeamValue with defaultSelectTeam prop changes (important for batch re-scout)
   useEffect(() => {
-    if (defaultSelectTeam && 
-        defaultSelectTeam !== baseTeams[0] && 
-        defaultSelectTeam !== baseTeams[1] && 
-        defaultSelectTeam !== baseTeams[2]) {
+    if (defaultSelectTeam &&
+      defaultSelectTeam !== baseTeams[0] &&
+      defaultSelectTeam !== baseTeams[1] &&
+      defaultSelectTeam !== baseTeams[2]) {
       setCustomTeamValue(defaultSelectTeam);
       setCustomTeamStatus(true);
       setTeam1Status(false);
@@ -167,9 +167,9 @@ const InitialSelectTeam = ({
   // Effect to update team selection when baseTeams or preferredTeamPosition changes
   useEffect(() => {
     // Only auto-select if no current selection and we have a preferred position
-    if (!team1Status && !team2Status && !team3Status && !customTeamStatus && 
-        preferredTeamPosition >= 1 && preferredTeamPosition <= 3) {
-      
+    if (!team1Status && !team2Status && !team3Status && !customTeamStatus &&
+      preferredTeamPosition >= 1 && preferredTeamPosition <= 3) {
+
       if (preferredTeamPosition === 1) {
         setTeam1Status(true);
       } else if (preferredTeamPosition === 2) {
@@ -193,11 +193,11 @@ const InitialSelectTeam = ({
           ) && (
             <div className="absolute left-0 top-0 w-full h-full z-1"></div>
           )}
-            {preferredTeamPosition > 0 && (
-              <p className="text-sm text-muted-foreground pb-2">
-                Your role suggests position {preferredTeamPosition}
-              </p>
-            )}
+        {preferredTeamPosition > 0 && (
+          <p className="text-sm text-muted-foreground pb-2">
+            Your role suggests position {preferredTeamPosition}
+          </p>
+        )}
         {/* Selectors */}
         <div className="flex flex-col w-full h-full gap-4">
           <div className="grow">

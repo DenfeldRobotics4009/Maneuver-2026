@@ -13,7 +13,8 @@ import type {
   ScoringCalculations,
   ValidationRules,
   StrategyAnalysis,
-  UIComponents
+  UIComponents,
+  DataTransformation
 } from '@/types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -23,11 +24,12 @@ interface GameContextValue {
   validation: ValidationRules<any>;
   analysis: StrategyAnalysis<any>;
   ui: UIComponents<any>;
+  transformation: DataTransformation;
 }
 
 const GameContext = createContext<GameContextValue | null>(null);
 
-export function useGame<T extends ScoutingEntryBase = ScoutingEntryBase>(): GameContextValue {
+export function useGame(): GameContextValue {
   const context = useContext(GameContext);
   if (!context) {
     throw new Error('useGame must be used within a GameProvider');
@@ -42,6 +44,7 @@ interface GameProviderProps<T extends ScoutingEntryBase = ScoutingEntryBase> {
   validation: ValidationRules<T>;
   analysis: StrategyAnalysis<T>;
   ui: UIComponents<T>;
+  transformation: DataTransformation;
 }
 
 export function GameProvider<T extends ScoutingEntryBase = ScoutingEntryBase>({
@@ -50,14 +53,16 @@ export function GameProvider<T extends ScoutingEntryBase = ScoutingEntryBase>({
   scoring,
   validation,
   analysis,
-  ui
+  ui,
+  transformation
 }: GameProviderProps<T>) {
   const value: GameContextValue = {
     config,
     scoring,
     validation,
     analysis,
-    ui
+    ui,
+    transformation
   };
 
   return (

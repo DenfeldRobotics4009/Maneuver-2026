@@ -13,9 +13,16 @@ components/
 ├── pit-scouting/             # Components for PitScoutingPage
 │   ├── index.ts
 │   └── GameQuestions.tsx     # Game-specific pit questions
-└── scoring/                  # Components for AutoScoringPage & TeleopScoringPage
+├── scoring/                  # Components for AutoScoringPage & TeleopScoringPage
+│   ├── index.ts
+│   └── ScoringSections.tsx   # Game-specific scoring UI
+└── team-stats/               # Components for TeamStatsPage
     ├── index.ts
-    └── ScoringSections.tsx   # Game-specific scoring UI
+    ├── StatOverview.tsx      # Overview tab stats
+    ├── ScoringAnalysis.tsx   # Scoring tab stats
+    ├── AutoAnalysis.tsx      # Auto tab stats
+    ├── PerformanceAnalysis.tsx # Performance tab stats
+    └── PitDataDisplay.tsx    # Pit Data tab display
 ```
 
 ## How to Use
@@ -111,6 +118,24 @@ import { GameSpecificQuestions } from "@/game-template/components/pit-scouting";
 - Any game Auto: Mobility/line crossing toggles
 
 **Example:** See JSDoc comments in `StatusToggles.tsx`
+
+### 4. Team Stats Components (`team-stats/`)
+
+**Used by:** `TeamStatsPage` (`src/core/pages/TeamStatsPage.tsx`)
+
+**Purpose:** Visualize the statistics and analysis for a team. The Core page provides the routing and filtering, while these components define the actual content of each tab.
+
+**Current Components:**
+- `StatOverview.tsx` - Overview metrics
+- `ScoringAnalysis.tsx` - Detailed scoring breakdown
+- `AutoAnalysis.tsx` - Auto start position visualization and stats
+- `PerformanceAnalysis.tsx` - Rate cards and match-by-match history
+- `PitDataDisplay.tsx` - How pit scouting data is displayed
+
+**How to Customize:**
+1. Use `src/game-template/analysis.ts` to define the *data* (sections, rates, badges).
+2. Modify these components to change the *visuals* (layout, specific charts).
+3. If you want to add a heatmap or specific chart type, this is where you add it.
 
 ## Adding New Page-Specific Components
 
