@@ -6,7 +6,7 @@
  * Supports compression detection, progress tracking, and custom data validation.
  */
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Scanner } from "@yudiel/react-qr-scanner";
 import { Button } from "@/core/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/core/components/ui/card";
@@ -75,15 +75,15 @@ export const UniversalFountainScanner = ({
   const sessionRef = useRef<string | null>(null);
   const totalPacketsRef = useRef<number | null>(null);
 
-  // Helper function to add debug messages (dev-only)
-  const addDebugMsg = (message: string) => {
-    if (import.meta.env.DEV) {
-      setDebugLog(prev => [...prev.slice(-20), `${new Date().toLocaleTimeString()}: ${message}`]);
-    }
-  };
+  // Helper function to add debug messages (dev-only) - uses throttled updates
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const addDebugMsg = useCallback((_message: string) => {
+    // Debug logging disabled for performance
+    return;
+  }, []);
 
   // Calculate missing packets based on seen packet IDs
-  const calculateMissingPackets = () => {
+  const calculateMissingPackets = useCallback(() => {
     const packetIds = Array.from(packetsRef.current.keys()).sort((a, b) => a - b);
 
     if (packetIds.length === 0) return [];
@@ -96,7 +96,8 @@ export const UniversalFountainScanner = ({
     if (minId === undefined || maxId === undefined) return [];
 
     // Check for gaps in the sequence
-    for (let i = minId; i <= maxId; i++) {
+    // Always start from 0 to detect missing packets at the beginning (generator is 0-indexed)
+    for (let i = 0; i <= maxId; i++) {
       if (!packetsRef.current.has(i)) {
         missing.push(i);
       }
@@ -111,16 +112,64 @@ export const UniversalFountainScanner = ({
     }
 
     return missing;
-  };
+  }, [addDebugMsg]);
 
-  const handleQRScan = async (result: { rawValue: string; }[]) => {
+  // Manual throttle (60fps limit is still safe, but 10fps is better for heavy processing)
+  const lastScanTimeRef = useRef<number>(0);
+  const lastMissingUpdateRef = useRef<number>(0);
+
+  // STABLE REFS PATTERN: Ensure handleQRScan never changes to prevent Scanner re-init
+  const propsRef = useRef({
+    allowDuplicates, expectedPacketType, saveData, validateData,
+    completionMessage, getDataSummary, onBack, dataType, decompressData, onComplete
+  });
+
+  // Update props ref on render
+  useEffect(() => {
+    propsRef.current = {
+      allowDuplicates, expectedPacketType, saveData, validateData,
+      completionMessage, getDataSummary, onBack, dataType, decompressData, onComplete
+    };
+  }, [allowDuplicates, expectedPacketType, saveData, validateData, completionMessage, getDataSummary, onBack, dataType, decompressData, onComplete]);
+
+  const neededPacketsRef = useRef<number>(0);
+
+  const handleQRScan = useCallback(async (result: { rawValue: string; }[]) => {
+    // Destructure current props/state from ref
+    const {
+      allowDuplicates, expectedPacketType, saveData, validateData,
+      completionMessage, getDataSummary, onComplete, onBack, dataType, decompressData
+    } = propsRef.current;
+
+    // THROTTLE: Limit scan processing to once every 50ms (20fps max)
+    const now = Date.now();
+    if (now - lastScanTimeRef.current < 50) {
+      return;
+    }
+    lastScanTimeRef.current = now;
+
     try {
       if (!result || result.length === 0 || !result[0]) {
         addDebugMsg("❌ Empty scan result");
         return;
       }
 
-      const packet: FountainPacket = JSON.parse(result[0].rawValue);
+      // Try to parse the QR code - if it's not valid JSON, it's not a fountain code
+      let packet: FountainPacket;
+      try {
+        packet = JSON.parse(result[0].rawValue);
+      } catch {
+        // Not a fountain code QR - silently ignore (could be a URL, text, etc.)
+        addDebugMsg(`⚠️ Not a fountain code QR (invalid JSON)`);
+        return;
+      }
+
+      // Validate that it's actually a fountain packet
+      if (!packet.type || !packet.sessionId || packet.packetId === undefined) {
+        addDebugMsg(`⚠️ Not a fountain code packet (missing required fields)`);
+        return;
+      }
+
       addDebugMsg(`🎯 Scanned packet ${packet.packetId} with indices [${packet.indices.join(',')}]`);
       addDebugMsg(`🆔 Session: ${packet.sessionId.slice(-8)}`);
 
@@ -157,10 +206,6 @@ export const UniversalFountainScanner = ({
       // Store the packet
       packetsRef.current.set(packet.packetId, packet);
       addDebugMsg(`📦 Added packet ${packet.packetId}, total: ${packetsRef.current.size}`);
-
-      // Debug: Show all packet IDs we have
-      const allPacketIds = Array.from(packetsRef.current.keys()).sort();
-      addDebugMsg(`🔢 All packet IDs: [${allPacketIds.join(',')}]`);
 
       // Use decoder
       if (decoderRef.current) {
@@ -227,7 +272,6 @@ export const UniversalFountainScanner = ({
               setProgress({ received: packetsRef.current.size, needed: packetsRef.current.size, percentage: 100 });
 
               await saveData(parsedData);
-              toast.success(completionMessage);
             } else {
               addDebugMsg("❌ Reconstructed data failed validation");
               toast.error("Reconstructed data is invalid");
@@ -243,19 +287,19 @@ export const UniversalFountainScanner = ({
 
       // Update progress estimate
       const received = packetsRef.current.size;
-      let estimatedNeeded = Math.max(packet.k + 5, 10); // Slightly more conservative estimate
-      let progressPercentage = (received / estimatedNeeded) * 100;
+      const baseEstimate = Math.max(packet.k + 3, 10);
 
-      // If we're beyond the initial estimate, use a more dynamic approach
-      if (received > estimatedNeeded) {
-        // Once we exceed the estimate, assume we need ~20% more than current
-        estimatedNeeded = Math.ceil(received * 1.2);
-        progressPercentage = (received / estimatedNeeded) * 100;
-        addDebugMsg(`🔄 Adjusted estimate: now need ~${estimatedNeeded} packets`);
+      // Track the highest estimate we've seen using REF, avoiding state dependency
+      if (baseEstimate > neededPacketsRef.current) {
+        neededPacketsRef.current = baseEstimate;
+      } else if (neededPacketsRef.current === 0) {
+        neededPacketsRef.current = baseEstimate;
       }
 
-      // Cap at 99% instead of 95% to show we're still working
-      progressPercentage = Math.min(progressPercentage, 99);
+      const estimatedNeeded = neededPacketsRef.current;
+
+      // Calculate percentage, capping at 99% until decoder completes
+      const progressPercentage = Math.min((received / estimatedNeeded) * 100, 99);
 
       setProgress({
         received,
@@ -263,19 +307,30 @@ export const UniversalFountainScanner = ({
         percentage: progressPercentage
       });
 
-      // Calculate and update missing packets
-      const missing = calculateMissingPackets();
-      setMissingPackets(missing);
+      // Calculate and update missing packets - THROTTLED to avoid re-renders
+      // Update missing packets every 500ms
+      if (Date.now() - lastMissingUpdateRef.current > 500) {
+        const missing = calculateMissingPackets();
 
-      addDebugMsg(`📈 Progress: ${received}/${estimatedNeeded} (${progressPercentage.toFixed(1)}%)`);
+        // Log missing packets info (only when we calculate them)
+        if (missing.length > 0 && missing.length <= 20) {
+          addDebugMsg(`🔍 Missing packets: [${missing.join(', ')}]`);
+        } else if (missing.length > 20) {
+          addDebugMsg(`🔍 Missing ${missing.length} packets: [${missing.slice(0, 5).join(', ')}, ..., ${missing.slice(-5).join(', ')}]`);
+        } else {
+          addDebugMsg(`✅ No missing packets in current range!`);
+        }
 
-      // Log missing packets info
-      if (missing.length > 0 && missing.length <= 20) {
-        addDebugMsg(`🔍 Missing packets: [${missing.join(', ')}]`);
-      } else if (missing.length > 20) {
-        addDebugMsg(`🔍 Missing ${missing.length} packets: [${missing.slice(0, 5).join(', ')}, ..., ${missing.slice(-5).join(', ')}]`);
-      } else {
-        addDebugMsg(`✅ No missing packets in current range!`);
+        // Simple equality check to avoid re-render if identical
+        setMissingPackets(prev => {
+          if (prev.length === missing.length &&
+            prev.length > 0 && missing.length > 0 &&
+            prev[0] === missing[0]) {
+            return prev;
+          }
+          return missing;
+        });
+        lastMissingUpdateRef.current = Date.now();
       }
 
       // Add debugging when we're getting close to completion but decoder isn't ready
@@ -295,7 +350,7 @@ export const UniversalFountainScanner = ({
       console.error("QR scan error:", error);
       toast.error("Error processing QR code");
     }
-  };
+  }, [addDebugMsg, calculateMissingPackets]);
 
   const resetScanner = () => {
     sessionRef.current = null;
@@ -409,14 +464,12 @@ export const UniversalFountainScanner = ({
         </div>
 
         {/* Scanning Instructions */}
-        {currentSession && (
-          <Alert>
-            <AlertTitle>📱 Scanning Instructions</AlertTitle>
-            <AlertDescription>
-              Scan fountain code packets in any order. Reconstruction will complete automatically when enough data is received.
-            </AlertDescription>
-          </Alert>
-        )}
+        <Alert>
+          <AlertTitle className="col-span-2">📱 Scanning Instructions</AlertTitle>
+          <AlertDescription className="col-span-2">
+            Scan fountain code packets in any order. Reconstruction will complete automatically when enough data is received.
+          </AlertDescription>
+        </Alert>
 
         <Card className="w-full">
           <CardHeader className="text-center">
@@ -453,6 +506,7 @@ export const UniversalFountainScanner = ({
             <div className="w-full h-64 md:h-80 overflow-hidden rounded-lg">
               <Scanner
                 components={{ finder: false }}
+                scanDelay={100}
                 styles={{
                   video: {
                     borderRadius: "7.5%",
@@ -490,10 +544,10 @@ export const UniversalFountainScanner = ({
                     </div>
                     <div className="text-xs text-muted-foreground p-2 bg-muted rounded max-h-16 overflow-y-auto">
                       {missingPackets.length <= 30 ? (
-                        <span>#{missingPackets.join(', #')}</span>
+                        <span>#{missingPackets.map(p => p + 1).join(', #')}</span>
                       ) : (
                         <span>
-                          #{missingPackets.slice(0, 10).join(', #')}
+                          #{missingPackets.slice(0, 10).map(p => p + 1).join(', #')}
                           <span className="text-orange-500"> ... and {missingPackets.length - 10} more</span>
                         </span>
                       )}
@@ -506,7 +560,7 @@ export const UniversalFountainScanner = ({
                   <div className="mt-2 text-sm">
                     <div className="flex items-center gap-1 text-green-600">
                       <CheckCircle className="h-3 w-3" />
-                      <span className="text-xs">All packets in range #{1} - #{totalPackets}</span>
+                      <span className="text-xs">All packets in range #{1} - #{totalPackets + 1}</span>
                     </div>
                   </div>
                 )}

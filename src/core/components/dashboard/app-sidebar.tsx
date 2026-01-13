@@ -52,7 +52,7 @@ const data = {
         },
         {
           title: "QR Data Transfer",
-          url: "/qr-data-transfer",
+          url: "/qr-transfer",
         },
         {
           title: "WiFi Transfer (Beta)",
@@ -138,24 +138,24 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { setOpenMobile } = useSidebar()
   const touchStartRef = React.useRef<{ x: number; y: number } | null>(null)
-  
+
   const handleTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0]
     if (!touch) return
-    
+
     touchStartRef.current = { x: touch.clientX, y: touch.clientY }
   }
-  
+
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (!touchStartRef.current) return
-    
+
     const touch = e.changedTouches[0]
     if (!touch) return
 
     const deltaX = touch.clientX - touchStartRef.current.x
     const deltaY = touch.clientY - touchStartRef.current.y
     const minSwipeDistance = 60
-    
+
     if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
       if (deltaX < -minSwipeDistance) {
         e.preventDefault()
@@ -163,7 +163,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         setOpenMobile(false)
       }
     }
-    
+
     touchStartRef.current = null
   }
 
@@ -180,16 +180,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
     const handleGlobalTouchEnd = (e: TouchEvent) => {
       if (!touchStartRef.current) return
-      
+
       const sidebar = document.querySelector('[data-sidebar="sidebar"]')
       if (sidebar && !sidebar.contains(e.target as Node)) {
         const touch = e.changedTouches[0]
         if (!touch) return
-        
+
         const deltaX = touch.clientX - touchStartRef.current.x
         const deltaY = touch.clientY - touchStartRef.current.y
         const minSwipeDistance = 60
-        
+
         if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
           if (deltaX < -minSwipeDistance) {
             e.preventDefault()
@@ -198,7 +198,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           }
         }
       }
-      
+
       touchStartRef.current = null
     }
 

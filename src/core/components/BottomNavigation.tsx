@@ -39,7 +39,7 @@ const navItems: BottomNavItem[] = [
   {
     icon: QrCode,
     label: 'QR Data',
-    href: '/qr-data-transfer',
+    href: '/qr-transfer',
   },
   {
     icon: TrendingUp,

@@ -22,6 +22,7 @@ import { PitScoutingPage } from "@/core/pages/PitScoutingPage";
 import APIDataPage from "@/core/pages/APIDataPage";
 import JSONDataTransferPage from "@/core/pages/JSONDataTransferPage";
 import PeerTransferPage from "@/core/pages/PeerTransferPage";
+import QRDataTransferPage from "@/core/pages/QRDataTransferPage";
 // GAME-SPECIFIC: Uncomment and implement these in your game implementation
 // import AutoStartPage from "@/pages/AutoStartPage";
 // import ParseDataPage from "@/pages/ParseDataPage";
@@ -91,10 +92,10 @@ function App() {
         <Route path="/api-data" element={<APIDataPage />} />
         <Route path="/json-transfer" element={<JSONDataTransferPage />} />
         <Route path="/peer-transfer" element={<PeerTransferPage />} />
+        <Route path="/qr-transfer" element={<QRDataTransferPage />} />
 
         {/* GAME-SPECIFIC ROUTES: Uncomment and implement these in your game implementation */}
         {/* <Route path="/parse-data" element={<ParseDataPage />} /> */}
-        {/* <Route path="/qr-data-transfer" element={<QRDataTransferPage />} /> */}
         {/* <Route path="/json-transfer" element={<JSONDataTransferPage />} /> */}
         {/* <Route path="/peer-transfer" element={<PeerTransferPage />} /> */}
         {/* <Route path="/match-data-qr" element={<MatchDataQRPage />} /> */}

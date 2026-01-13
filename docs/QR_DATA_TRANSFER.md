@@ -1,4 +1,4 @@
-# Data Transfer System - QR Code Fountain Codes
+# QR Data Transfer
 
 **Framework Component - Game-Agnostic**
 
@@ -46,7 +46,7 @@ The data transfer system consists of:
 - `src/core/components/ui/progress.tsx` (28 lines) - Progress bar UI component
 - `src/components/index.ts` - Export updates for data transfer components
 - `src/lib/index.ts` - Export updates for compression utilities
-- `docs/DATA_TRANSFER.md` (470+ lines) - Comprehensive documentation
+- `docs/QR_DATA_TRANSFER.md` (490+ lines) - Comprehensive documentation
 - Integration testing validation
 
 ## Component: UniversalFountainGenerator
@@ -255,8 +255,19 @@ interface FountainPacket {
 
 ### Redundancy Factors
 
-- **Small Datasets** (< 20 blocks): 50% redundancy (1.5x packets)
-- **Large Datasets** (≥ 20 blocks): 30% redundancy (1.3x packets)
+- **Small Datasets** (< 25 blocks): 150% redundancy (2.5x packets) - ensures reliable probabilistic decoding
+- **Large Datasets** (≥ 25 blocks): 50% redundancy (1.5x packets)
+
+### Performance Optimizations
+
+The scanner component includes several optimizations to ensure smooth operation:
+
+- **Scan Throttling**: Scan processing is capped at 20fps (50ms intervals) to prevent CPU overload
+- **Stable Callback Refs**: `handleQRScan` uses `useCallback` with stable refs pattern to prevent Scanner component re-initialization
+- **Missing Packets Throttling**: Missing packet calculations are throttled to 500ms to reduce expensive UI re-renders
+- **O(N) Complexity**: Removed O(N log N) sorting operations from the hot path
+- **Debug Logging**: Debug logging is completely disabled in production for maximum performance
+- **@yudiel/react-qr-scanner v2.3.1**: Uses verified stable version to match 2025 application performance
 
 ## Testing
 
@@ -468,6 +479,3 @@ export function ScoutingDataFountainGenerator() {
 - Error handling at every step
 
 ---
-
-**Built for extensibility, designed for simplicity.** 🤖
-

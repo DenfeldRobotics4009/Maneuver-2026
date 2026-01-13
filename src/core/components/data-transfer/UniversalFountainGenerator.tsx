@@ -78,7 +78,7 @@ export const UniversalFountainGenerator = ({
       try {
         const loadedData = await loadData();
         setData(loadedData);
-        
+
         if (import.meta.env.DEV) {
           if (loadedData) {
             console.log(`Loaded ${dataType} data for fountain codes:`, loadedData);
@@ -104,10 +104,10 @@ export const UniversalFountainGenerator = ({
 
     let encodedData: Uint8Array;
     let currentCompressionInfo = '';
-    
+
     // Cache JSON string to avoid duplicate serialization
     const jsonString = JSON.stringify(data);
-    
+
     // Check if custom compression is provided
     if (customCompress && shouldUseCompression(data, jsonString)) {
       if (import.meta.env.DEV) {
@@ -131,24 +131,24 @@ export const UniversalFountainGenerator = ({
       encodedData = new TextEncoder().encode(jsonString);
       currentCompressionInfo = `Standard JSON: ${encodedData.length} bytes`;
     }
-    
+
     // Store compression info for display
     setCompressionInfo(currentCompressionInfo);
-    
+
     // Validate data size - need sufficient data for meaningful fountain codes
     const isCompressed = currentCompressionInfo.toLowerCase().includes('compress');
     const minDataSize = isCompressed ? MIN_FOUNTAIN_SIZE_COMPRESSED : MIN_FOUNTAIN_SIZE_UNCOMPRESSED;
-    
+
     if (encodedData.length < minDataSize) {
       toast.error(`${dataType} data is too small (${encodedData.length} bytes). Need at least ${minDataSize} bytes for fountain code generation.`);
       console.warn(`Data too small for fountain codes: ${encodedData.length} bytes (min: ${minDataSize})`);
       return;
     }
-    
+
     if (import.meta.env.DEV) {
       console.log(`📊 ${currentCompressionInfo}`);
     }
-    
+
     const blockSize = 200;
     const ltEncoder = createEncoder(encodedData, blockSize);
     const newSessionId = `${dataType}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -157,14 +157,16 @@ export const UniversalFountainGenerator = ({
     let packetId = 0;
     const seenIndicesCombinations = new Set();
     let iterationCount = 0;
-    
+
     // Calculate how many blocks we have for intelligent packet generation
     const estimatedBlocks = Math.ceil(encodedData.length / blockSize);
-    
-    // Small datasets (< 20 blocks) need 50% redundancy, larger datasets need 30%
-    const redundancyFactor = estimatedBlocks < 20 ? 1.5 : 1.3;
+
+    // Fountain codes need significant redundancy for reliable decoding
+    // Small datasets (< 25 blocks) need 150% redundancy (2.5x packets)
+    // Larger datasets can use 50% redundancy due to probability math
+    const redundancyFactor = estimatedBlocks < 25 ? 2.5 : 1.5;
     const targetPackets = Math.ceil(estimatedBlocks * redundancyFactor);
-    
+
     // Cap maximum iterations to prevent infinite loops
     const maxIterations = targetPackets * 5;
 
@@ -174,14 +176,14 @@ export const UniversalFountainGenerator = ({
 
     for (const block of ltEncoder.fountain()) {
       iterationCount++;
-      
+
       // Safety check to prevent infinite loops
       if (iterationCount > maxIterations) {
         console.warn(`⚠️ Reached maximum iterations (${maxIterations}), stopping generation with ${generatedPackets.length} packets`);
         console.warn(`Target was ${targetPackets} packets, achieved ${Math.round((generatedPackets.length / targetPackets) * 100)}%`);
         break;
       }
-      
+
       // Stop when we have enough packets for reliable decoding
       if (generatedPackets.length >= targetPackets) {
         if (import.meta.env.DEV) {
@@ -189,7 +191,7 @@ export const UniversalFountainGenerator = ({
         }
         break;
       }
-      
+
       try {
         const indicesKey = block.indices.sort().join(',');
         if (seenIndicesCombinations.has(indicesKey)) {
@@ -199,7 +201,7 @@ export const UniversalFountainGenerator = ({
 
         const binary = blockToBinary(block);
         const base64Data = fromUint8Array(binary);
-        
+
         const packet: FountainPacket = {
           type: `${dataType}_fountain_packet`,
           sessionId: newSessionId,
@@ -226,12 +228,12 @@ export const UniversalFountainGenerator = ({
         break;
       }
     }
-    
+
     setPackets(generatedPackets);
     setCurrentPacketIndex(0);
     setIsPaused(false); // Start playing automatically
     setJumpToPacket(''); // Clear jump input
-    
+
     const selectedSpeed = speedPresets.find(s => s.value === cycleSpeed);
     const estimatedTime = Math.round((generatedPackets.length * cycleSpeed) / 1000);
     toast.success(`Generated ${generatedPackets.length} packets - cycling at ${selectedSpeed?.label}! (~${estimatedTime}s per cycle)`);
@@ -284,24 +286,24 @@ export const UniversalFountainGenerator = ({
   // Helper function to check if data is sufficient for fountain code generation
   const isDataSufficient = () => {
     if (!data) return false;
-    
+
     const jsonString = JSON.stringify(data);
     const useCompression = shouldUseCompression(data, jsonString);
     const minSize = useCompression ? MIN_FOUNTAIN_SIZE_COMPRESSED : MIN_FOUNTAIN_SIZE_UNCOMPRESSED;
-    
+
     const encodedData = new TextEncoder().encode(jsonString);
     return encodedData.length >= minSize;
   };
 
   const getDataSizeInfo = () => {
     if (!data) return null;
-    
+
     const jsonString = JSON.stringify(data);
     const useCompression = shouldUseCompression(data, jsonString);
     const minSize = useCompression ? MIN_FOUNTAIN_SIZE_COMPRESSED : MIN_FOUNTAIN_SIZE_UNCOMPRESSED;
-    
+
     const encodedData = new TextEncoder().encode(jsonString);
-    
+
     return {
       size: encodedData.length,
       sufficient: encodedData.length >= minSize,
@@ -314,7 +316,7 @@ export const UniversalFountainGenerator = ({
   const dataSizeInfo = getDataSizeInfo();
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center gap-6 px-4 pt-(--header-height) pb-6">
+    <div className="min-h-screen w-full flex flex-col items-center gap-6 px-4 pt-16 pb-6">
       <div className="flex flex-col items-center gap-4 max-w-md w-full pb-4">
         {/* Navigation Header */}
         <div className="flex items-center justify-between w-full">
@@ -377,7 +379,7 @@ export const UniversalFountainGenerator = ({
               >
                 Generate & Start Auto-Cycling
               </Button>
-              
+
               {!data ? (
                 <Alert variant="destructive">
                   <AlertDescription>
@@ -386,8 +388,8 @@ export const UniversalFountainGenerator = ({
                 </Alert>
               ) : data && !isDataSufficient() ? (
                 <Alert variant="destructive">
-                  <AlertDescription>
-                    {dataType} data is too small ({dataSizeInfo?.size || 0} bytes). 
+                  <AlertDescription className="col-span-2">
+                    {dataType} data is too small ({dataSizeInfo?.size || 0} bytes).
                     Need at least {dataSizeInfo?.compressed ? MIN_FOUNTAIN_SIZE_COMPRESSED : MIN_FOUNTAIN_SIZE_UNCOMPRESSED} bytes for fountain code generation.
                     {dataSizeInfo?.compressed && ' (Compressed data threshold)'}
                   </AlertDescription>
@@ -399,9 +401,9 @@ export const UniversalFountainGenerator = ({
           <div className="flex flex-col items-center gap-4 w-full">
             {/* Scanning Instructions */}
             <Alert>
-              <AlertTitle>📱 Scanning Instructions</AlertTitle>
-              <AlertDescription>
-                Point your scanner at the QR code. Use playback controls to pause, navigate, or jump to specific packets. 
+              <AlertTitle className="col-span-2">📱 Scanning Instructions</AlertTitle>
+              <AlertDescription className="col-span-2">
+                Point your scanner at the QR code. Use playback controls to pause, navigate, or jump to specific packets.
                 Estimated time per cycle: {Math.round((packets.length * cycleSpeed) / 1000)}s
               </AlertDescription>
             </Alert>
@@ -527,7 +529,7 @@ export const UniversalFountainGenerator = ({
                 </div>
 
                 <div className="flex items-start gap-2">
-                  <Info className="inline mt-0.5 text-muted-foreground shrink-0" size={16}/>
+                  <Info className="inline mt-0.5 text-muted-foreground shrink-0" size={16} />
                   <p className="text-xs text-muted-foreground">
                     If unable to get final packets, try slowing down the cycle speed or use manual navigation.
                   </p>
@@ -559,9 +561,9 @@ export const UniversalFountainGenerator = ({
                 <CardContent className="space-y-2">
                   <div className="text-sm space-y-1">
                     <div>
-                      <span className="font-medium">Indices:</span> 
+                      <span className="font-medium">Indices:</span>
                       <span className="ml-1 break-all">
-                        {currentPacket.indices.length > 20 
+                        {currentPacket.indices.length > 20
                           ? `[${currentPacket.indices.slice(0, 20).join(',')}...+${currentPacket.indices.length - 20} more]`
                           : `[${currentPacket.indices.join(',')}]`
                         }
@@ -578,9 +580,9 @@ export const UniversalFountainGenerator = ({
                       <span>{currentPacketIndex + 1}/{packets.length}</span>
                     </div>
                     <div className="w-full bg-muted rounded-full h-2">
-                      <div 
+                      <div
                         className="bg-primary h-2 rounded-full transition-all ease-linear"
-                        style={{ 
+                        style={{
                           width: `${((currentPacketIndex + 1) / packets.length) * 100}%`,
                           transitionDuration: `${cycleSpeed}ms`
                         }}

@@ -143,7 +143,7 @@ const JSONDataTransferPage = () => {
           break;
         }
         case 'pitScoutingImagesOnly': {
-          alert("CSV export not available for images-only data. Use JSON download instead.");
+          alert("CSV export not available for images-only data. Use JSON or Wifi download instead.");
           return;
         }
         case 'scoutProfiles': {
