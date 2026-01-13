@@ -114,6 +114,40 @@ npm run dev
 npm run build
 ```
 
+### Receiving Updates from maneuver-core
+
+If you want to pull bug fixes and enhancements from `maneuver-core` into your year-specific repo, you have two options:
+
+#### Option 1: Fork (Recommended for external teams)
+
+**fork** the repository instead of using it as a template. This maintains git history and makes pulling updates easy:
+
+```bash
+# In your forked repo, pull upstream changes anytime
+git fetch upstream
+git merge upstream/main
+```
+
+#### Option 2: Add upstream remote (For template-based repos)
+
+If you used the template, manually add maneuver-core as an upstream remote:
+
+```bash
+# One-time setup: add maneuver-core as upstream
+git remote add upstream https://github.com/ShinyShips/maneuver-core.git
+
+# First merge requires --allow-unrelated-histories (template repos have no shared history)
+git fetch upstream
+git merge upstream/main --allow-unrelated-histories
+# Resolve conflicts: keep YOUR version for game-template/, keep UPSTREAM for core/
+
+# Future updates are simple
+git fetch upstream
+git merge upstream/main
+```
+
+> **Tip**: When resolving conflicts, game-specific files in `src/game-template/` should keep your version, while framework files in `src/core/` should typically use the upstream version.
+
 ### Environment Setup
 
 Copy `.env.example` to `.env` and add your API keys:
