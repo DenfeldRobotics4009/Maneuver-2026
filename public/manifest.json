@@ -1,0 +1,95 @@
+{
+  "name": "Maneuver - A FRC Strategy Suite",
+  "short_name": "Maneuver FRC",
+  "description": "Maneuver is a FRC Strategy Suite designed for offline first robotics competition scouting.",
+  "theme_color": "#0f172a",
+  "background_color": "#0f172a",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/",
+  "categories": ["sports", "utilities", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Quick Scout",
+      "short_name": "Scout",
+      "description": "Start scouting a match",
+      "url": "/game-start",
+      "icons": [{
+        "src": "/QuickScoutShortcut.png",
+        "sizes": "96x96",
+        "type": "image/png"
+      }]
+    },
+    {
+      "name": "Team Stats",
+      "short_name": "Stats", 
+      "description": "View team analytics",
+      "url": "/team-stats",
+      "icons": [{
+        "src": "/TeamStatsShortcut.png",
+        "sizes": "96x96",
+        "type": "image/png"
+      }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/desktop-screenshot.png",
+      "sizes": "1920x1079",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Maneuver desktop view"
+    },
+    {
+      "src": "/screenshots/mobile-screenshot.png",
+      "sizes": "430x932", 
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Maneuver mobile view"
+    }
+  ],
+  "icons": [
+    {
+      "src": "/Icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

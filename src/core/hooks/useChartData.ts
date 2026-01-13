@@ -1,0 +1,110 @@
+import { useMemo, useCallback } from "react";
+import { StrategyConfig, TeamData } from "@/core/types/strategy";
+
+export const useChartData = (
+    filteredTeamStats: TeamData[],
+    chartType: "bar" | "scatter" | "box" | "stacked",
+    chartMetric: string,
+    scatterXMetric: string,
+    scatterYMetric: string,
+    config: StrategyConfig
+) => {
+
+    // Helper to get column definition
+    const getCol = useCallback((key: string) =>
+        config.columns.find(c => c.key === key),
+        [config.columns]);
+
+    const chartData = useMemo(() => {
+        if (chartType === "scatter") {
+            return filteredTeamStats.map(team => ({
+                team: String(team.teamNumber),
+                x: typeof team[scatterXMetric] === 'number' ? team[scatterXMetric] : 0,
+                y: typeof team[scatterYMetric] === 'number' ? team[scatterYMetric] : 0,
+                eventKey: team.eventKey
+            }));
+        }
+        else if (chartType === "box") {
+            // Box plot logic requires raw match data which we aggregated away in TeamStats.
+            // The original logic simulated distribution based on average. 
+            // We will preserve that simulation logic as it's year-agnostic (just math).
+            const boxData: Array<{ team: string; value: number; eventKey: string }> = [];
+
+            filteredTeamStats.forEach(team => {
+                const baseVal = typeof team[chartMetric] === 'number' ? team[chartMetric] as number : 0;
+                const matches = typeof team.matchCount === 'number' ? team.matchCount as number : 1;
+
+                // Simulate distribution (original logic)
+                for (let i = 0; i < Math.max(1, Math.min(matches, 12)); i++) {
+                    const variationFactor = Math.random() < 0.1 ? 0.6 : 0.4;
+                    const variation = (Math.random() - 0.5) * variationFactor * baseVal;
+                    boxData.push({
+                        team: String(team.teamNumber),
+                        value: Math.max(0, baseVal + variation),
+                        eventKey: team.eventKey
+                    });
+                }
+            });
+            return boxData;
+        }
+        else if (chartType === "stacked") {
+            // Stacked bar logic. 
+            // We assume "Auto", "Teleop", "Endgame" phases exist if we want to Stack them.
+            // Ideally this should be config driven, but for now we map standard phases.
+            // We look for columns ending in 'Points' usually, or specifically defined ones.
+
+            // To be truly year agnostic, we should probably check if 'autoPoints', 'teleopPoints', 'endgamePoints' exist in the data.
+            // If they do, we use them.
+
+            return filteredTeamStats.map(team => {
+                const auto = (team['autoPoints'] as number) || 0;
+                const teleop = (team['teleopPoints'] as number) || 0;
+                const endgame = (team['endgamePoints'] as number) || 0;
+
+                return {
+                    team: String(team.teamNumber),
+                    autoPoints: auto,
+                    teleopPoints: teleop,
+                    endgamePoints: endgame,
+                    totalPoints: auto + teleop + endgame,
+                    eventKey: team.eventKey
+                };
+            })
+                .sort((a, b) => b.totalPoints - a.totalPoints)
+                .slice(0, 12);
+        }
+        else {
+            // Bar chart
+            return filteredTeamStats.map(team => ({
+                team: String(team.teamNumber),
+                value: (team[chartMetric] as number) || 0,
+                eventKey: team.eventKey
+            }))
+                .sort((a, b) => (b.value as number) - (a.value as number))
+                .slice(0, 12); // Top 12
+        }
+
+    }, [filteredTeamStats, chartType, chartMetric, scatterXMetric, scatterYMetric]);
+
+    const chartConfig = useMemo(() => {
+        const xCol = getCol(scatterXMetric);
+        const yCol = getCol(scatterYMetric);
+        const mainCol = getCol(chartMetric);
+
+        if (chartType === "stacked") {
+            return {
+                autoPoints: { label: "Auto Points", color: "hsl(var(--chart-1))" },
+                teleopPoints: { label: "Teleop Points", color: "hsl(var(--chart-2))" },
+                endgamePoints: { label: "Endgame Points", color: "hsl(var(--chart-3))" },
+            };
+        }
+
+        return {
+            value: { label: mainCol?.label || "Value", color: "hsl(var(--chart-1))" },
+            x: { label: xCol?.label || "X", color: "hsl(var(--chart-1))" },
+            y: { label: yCol?.label || "Y", color: "hsl(var(--chart-2))" },
+        };
+    }, [chartType, chartMetric, scatterXMetric, scatterYMetric, getCol]);
+
+    return { chartData, chartConfig };
+}
