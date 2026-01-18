@@ -122,7 +122,7 @@ const AutoScoringPage = () => {
   };
 
   return (
-    <div className="h-full flex flex-col items-center pt-12 pb-24 px-4 md:pb-6">
+    <div className="h-full flex flex-col items-center pt-12 pb-24 px-4 2xl:pb-6">
       <div className="w-full max-w-7xl">
         <h1 className="text-2xl font-bold pb-4">Autonomous</h1>
       </div>
