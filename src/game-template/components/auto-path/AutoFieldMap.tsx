@@ -1,5 +1,5 @@
 /**
- * Auto Path Tracker Component
+ * Auto Field Map Component
  * 
  * Guided path tracking for autonomous period that visualizes robot movements
  * on the field map. Action buttons overlay the field at their actual positions.
@@ -38,6 +38,7 @@ import {
 
 // Context hooks
 import { AutoPathProvider, useAutoScoring } from "@/game-template/contexts";
+import { actions as schemaActions } from "@/game-template/game-schema";
 
 // Local sub-components
 import { AutoActionLog } from "./components/AutoActionLog";
@@ -56,7 +57,7 @@ export type { PathActionType, ZoneType, PathWaypoint };
 
 
 
-export interface AutoPathTrackerProps {
+export interface AutoFieldMapProps {
     onAddAction: (action: any) => void;
     actions: PathWaypoint[];
     onUndo?: () => void;
@@ -73,7 +74,7 @@ export interface AutoPathTrackerProps {
 // WRAPPER COMPONENT - Provides Context
 // =============================================================================
 
-export function AutoPathTracker(props: AutoPathTrackerProps) {
+export function AutoFieldMap(props: AutoFieldMapProps) {
     const location = useLocation();
     const alliance = location.state?.inputs?.alliance || 'blue';
 
@@ -90,7 +91,7 @@ export function AutoPathTracker(props: AutoPathTrackerProps) {
             onBack={props.onBack}
             onProceed={props.onProceed}
         >
-            <AutoPathTrackerContent />
+            <AutoFieldMapContent />
         </AutoPathProvider>
     );
 }
@@ -99,7 +100,7 @@ export function AutoPathTracker(props: AutoPathTrackerProps) {
 // CONTENT COMPONENT - Uses Context
 // =============================================================================
 
-function AutoPathTrackerContent() {
+function AutoFieldMapContent() {
     // Get all state from context
     const {
         // From ScoringContext
@@ -194,19 +195,53 @@ function AutoPathTrackerContent() {
     }, [actions]);
 
 
-    // Calculate totals from actions
+    // Calculate total score from actions (not just fuel count)
+    const totalScore = actions.reduce((sum, action) => {
+        // Find matching action in schema
+        const schemaAction = Object.entries(schemaActions).find(([key, def]) => {
+            if (def.pathType !== action.type) return false;
+            
+            // For climb, match autoClimb
+            if (action.type === 'climb' && action.action === 'climb-success') {
+                return key === 'autoClimb';
+            }
+            
+            // For collect, match by pathAction
+            if (action.type === 'collect' && 'pathAction' in def && def.pathAction) {
+                return def.pathAction === action.action;
+            }
+            
+            // For score, count fuel points
+            if (action.type === 'score') {
+                return key === 'fuelScored';
+            }
+            
+            return true;
+        });
+        
+        if (schemaAction) {
+            const [, def] = schemaAction;
+            const points = def.points.auto || 0;
+            
+            // For fuel scoring, multiply by fuel count
+            if (action.type === 'score' && action.fuelDelta) {
+                return sum + (points * Math.abs(action.fuelDelta));
+            }
+            
+            // For other actions, just add the points
+            return sum + points;
+        }
+        
+        return sum;
+    }, 0);
+
     const totalFuelScored = actions
         .filter(a => a.type === 'score')
         .reduce((sum, a) => sum + Math.abs(a.fuelDelta || 0), 0);
 
-    const totalScore = actions.reduce((sum, action) => {
-        if (action.type === 'score' && action.fuelDelta) {
-            return sum + Math.abs(action.fuelDelta) * 3; // 3 points per fuel
-        } else if (action.type === 'climb' && action.action !== 'attempt') {
-            return sum + 15; // Auto climb is 15 points
-        }
-        return sum;
-    }, 0);
+    const totalFuelPassed = actions
+        .filter(a => a.type === 'pass')
+        .reduce((sum, a) => sum + Math.abs(a.fuelDelta || 0), 0);
 
 
 
@@ -310,6 +345,7 @@ function AutoPathTrackerContent() {
                 break;
             }
             case 'pass':
+            case 'pass_alliance':
                 setIsSelectingPass(true); // Enter pass position selection mode
                 break;
             case 'collect_neutral':
@@ -398,7 +434,7 @@ function AutoPathTrackerContent() {
                 phase="auto"
                 stats={[
                     { label: 'Scored', value: totalFuelScored, color: 'green' },
-                    { label: 'Points', value: totalScore, color: 'slate' },
+                    { label: 'Passed', value: totalFuelPassed, color: 'purple' },
                 ]}
                 currentZone={currentZone}
                 isFullscreen={isFullscreen}
@@ -421,7 +457,7 @@ function AutoPathTrackerContent() {
                 ref={containerRef}
                 className={cn(
                     "relative rounded-lg overflow-hidden border border-slate-700 bg-slate-900 select-none",
-                    "w-full aspect-2/1",
+                    "w-full aspect-[2/1]",
                     isFullscreen ? "max-h-[85vh] m-auto" : "h-auto",
                     isFieldRotated && "rotate-180" // 180° rotation for field orientation preference
                 )}
@@ -652,7 +688,7 @@ function AutoPathTrackerContent() {
 
     if (isFullscreen) {
         return (
-            <div className="fixed inset-0 z-100 bg-background p-4 flex flex-col">
+            <div className="fixed inset-0 z-[100] bg-background p-4 flex flex-col">
                 {content}
             </div>
         );

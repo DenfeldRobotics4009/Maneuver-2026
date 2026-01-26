@@ -44,7 +44,7 @@ export const workflowConfig: WorkflowConfig = {
         teleopScoring: true,  // Teleop period scoring (required)
         endgame: true,        // Endgame page with status toggles & submit
         showAutoStatus: true,    // Show robot status on Auto (set false to hide)
-        showTeleopStatus: true,  // Show robot status on Teleop
+        showTeleopStatus: false,  // Show robot status on Teleop
         showEndgameStatus: true, // Show robot status on Endgame
     },
 };
@@ -61,27 +61,28 @@ export type WorkflowRoutePage = 'autoStart' | 'autoScoring' | 'teleopScoring' | 
 /**
  * Field zones for zone-aware scoring UI.
  * Coordinates are based on a 640x480 canvas (matches field image aspect ratio).
+ * Zone boundaries align with trench bars at x=0.31 and x=0.69 (198px and 442px).
  */
 export const zones = {
     allianceZone: {
         label: "Alliance Zone",
         description: "Score fuel, collect from depot/outpost",
         color: "rgba(34, 197, 94, 0.4)", // Green
-        bounds: { x: 0, y: 0, width: 160, height: 480 },
+        bounds: { x: 0, y: 0, width: 198, height: 480 },
         actions: ['score', 'pass'] as const,
     },
     neutralZone: {
         label: "Neutral Zone",
         description: "Collect from pile, pass to partner",
         color: "rgba(234, 179, 8, 0.4)", // Yellow
-        bounds: { x: 160, y: 0, width: 320, height: 480 },
+        bounds: { x: 198, y: 0, width: 244, height: 480 },
         actions: ['pass'] as const,
     },
     opponentZone: {
         label: "Opponent Zone",
         description: "Defense, collect from hub exit",
         color: "rgba(239, 68, 68, 0.4)", // Red
-        bounds: { x: 480, y: 0, width: 160, height: 480 },
+        bounds: { x: 442, y: 0, width: 198, height: 480 },
         actions: ['defense'] as const,
     },
 } as const;
@@ -89,30 +90,94 @@ export const zones = {
 export type ZoneKey = keyof typeof zones;
 
 // =============================================================================
-// ACTION DEFINITIONS (Bulk Counter Approach)
+// ACTION DEFINITIONS (Path-Based Tracking)
 // =============================================================================
 
 /**
- * Actions tracked with bulk counters (+1, +5, +10).
- * High fuel volume makes individual tracking impractical.
- * Data can be calibrated against TBA after matches.
+ * Actions tracked from AutoPathTracker waypoints.
+ * Each action has a pathType that maps to PathWaypoint.type.
  */
 export const actions = {
-    // Fuel scoring - tracked in Alliance Zone
+    // Fuel scoring at Hub (pathType: 'score')
     fuelScored: {
         label: "Fuel Scored",
         description: "Fuel deposited into alliance HUB",
         points: { auto: 1, teleop: 1 },
-        increments: [1, 5, 10],
-        zone: 'allianceZone',
+        pathType: 'score',
     },
-    // Fuel passed - tracked in any zone for coordination
+    // Collection from depot (pathType: 'collect', action: 'depot')
+    depotCollect: {
+        label: "Depot Collection",
+        description: "Collected from depot",
+        points: { auto: 0, teleop: 0 },
+        pathType: 'collect',
+        pathAction: 'depot',
+    },
+    // Collection from outpost (pathType: 'collect', action: 'outpost')
+    outpostCollect: {
+        label: "Outpost Collection",
+        description: "Collected from outpost",
+        points: { auto: 0, teleop: 0 },
+        pathType: 'collect',
+        pathAction: 'outpost',
+    },
+    // Fuel passed to alliance zone (pathType: 'pass')
     fuelPassed: {
         label: "Fuel Passed",
-        description: "Fuel passed to alliance partner or corral",
+        description: "Fuel passed to alliance zone",
         points: { auto: 0, teleop: 0 },
-        increments: [1, 5, 10],
-        zone: 'any',
+        pathType: 'pass',
+    },
+    // Foul (pathType: 'foul')
+    foulCommitted: {
+        label: "Foul",
+        description: "Crossed mid-line into opponent zone",
+        points: { auto: 0, teleop: 0 },
+        pathType: 'foul',
+    },
+    // Auto climb (pathType: 'climb', action: 'climb-success')
+    autoClimb: {
+        label: "Auto Climb L1",
+        description: "Climbed to Level 1 during Auto",
+        points: { auto: 15, teleop: 0 },
+        pathType: 'climb',
+        pathAction: 'climb-success',
+    },
+    // Teleop climbs (pathType: 'climb', climbLevel: 1/2/3, climbResult: 'success')
+    climbL1: {
+        label: "Climb Level 1",
+        description: "Off carpet/tower base",
+        points: { auto: 0, teleop: 10 },
+        pathType: 'climb',
+        climbLevel: 1,
+    },
+    climbL2: {
+        label: "Climb Level 2",
+        description: "Bumpers above Low Rung",
+        points: { auto: 0, teleop: 20 },
+        pathType: 'climb',
+        climbLevel: 2,
+    },
+    climbL3: {
+        label: "Climb Level 3",
+        description: "Bumpers above Mid Rung",
+        points: { auto: 0, teleop: 30 },
+        pathType: 'climb',
+        climbLevel: 3,
+    },
+    // Defense (pathType: 'defense')
+    defense: {
+        label: "Defense",
+        description: "Played defense on opponent",
+        points: { auto: 0, teleop: 0 },
+        pathType: 'defense',
+    },
+    // Steal (pathType: 'steal')
+    steal: {
+        label: "Steal",
+        description: "Stole fuel from opponent zone",
+        points: { auto: 0, teleop: 0 },
+        pathType: 'steal',
     },
 } as const;
 
@@ -126,65 +191,110 @@ export const actions = {
  */
 export const toggles = {
     auto: {
-        // Auto mobility/status
-        leftStartZone: {
-            label: "Left Start Zone",
-            description: "Robot moved out of starting zone during Auto",
-        },
-        // Auto climb (new for 2026!)
-        autoClimbL1: {
-            label: "Auto Climb L1",
-            description: "Climbed to Level 1 during Auto (15 pts)",
-            points: 15,
-        },
+        // Auto toggles (currently empty - all tracking is path-based)
     },
     teleop: {
-        // Teleop status toggles
-        playedDefense: {
-            label: "Played Defense",
-            description: "Robot played significant defense",
-        },
-        underTrench: {
-            label: "Used Trench",
-            description: "Robot went under the trench (< 22.25\")",
-        },
-        overBump: {
-            label: "Used Bump",
-            description: "Robot went over the bump ramps",
-        },
+        // Teleop toggles (currently empty - all tracking is path-based)
     },
     endgame: {
-        // Tower climb levels (mutually exclusive - group: "climb")
-        climbL1: {
-            label: "Level 1",
-            description: "Off carpet/tower base (10 pts teleop)",
-            points: 10,
-            group: "climb",
+        // Active Phase Role toggles (multi-select, group: "roleActive")
+        roleActiveCleanUp: {
+            label: "Clean Up",
+            description: "Collected fuel from the Alliance Zone and Scored",
+            group: "roleActive",
         },
-        climbL2: {
-            label: "Level 2",
-            description: "Bumpers above Low Rung (20 pts)",
-            points: 20,
-            group: "climb",
+        roleActivePasser: {
+            label: "Passer",
+            description: "Passed fuel to alliance partners",
+            group: "roleActive",
         },
-        climbL3: {
-            label: "Level 3",
-            description: "Bumpers above Mid Rung (30 pts)",
-            points: 30,
-            group: "climb",
+        roleActiveDefense: {
+            label: "Defense",
+            description: "Played defensive role",
+            group: "roleActive",
         },
-        // Status toggles (independent)
-        climbFailed: {
-            label: "Climb Failed",
-            description: "Attempted climb but failed",
-            points: 0,
-            group: "status",
+        roleActiveCycler: {
+            label: "Cycler",
+            description: "Scored fuel repeatedly, going from the Neutral Zone to the Alliance Zone",
+            group: "roleActive",
         },
-        noClimb: {
-            label: "No Attempt",
-            description: "Did not attempt to climb",
-            points: 0,
-            group: "status",
+        roleActiveThief: {
+            label: "Thief",
+            description: "Stole fuel from opponent zone",
+            group: "roleActive",
+        },
+        
+        // Inactive Phase Role toggles (multi-select, group: "roleInactive")
+        roleInactiveCleanUp: {
+            label: "Clean Up",
+            description: "Collected fuel from the Alliance Zone and Scored",
+            group: "roleInactive",
+        },
+        roleInactivePasser: {
+            label: "Passer",
+            description: "Passed fuel to alliance partners",
+            group: "roleInactive",
+        },
+        roleInactiveDefense: {
+            label: "Defense",
+            description: "Played defensive role",
+            group: "roleInactive",
+        },
+        roleInactiveCycler: {
+            label: "Cycler",
+            description: "Scored fuel repeatedly, going from the Neutral Zone to the Alliance Zone",
+            group: "roleInactive",
+        },
+        roleInactiveThief: {
+            label: "Thief",
+            description: "Stole fuel from opponent zone",
+            group: "roleInactive",
+        },
+        
+        // Passing zones (multi-select, group: "passingZone")
+        passedToAlliance: {
+            label: "Alliance Zone",
+            description: "Passed fuel to alliance zone",
+            group: "passingZone",
+        },
+        passedToNeutral: {
+            label: "Neutral Zone",
+            description: "Passed fuel to neutral zone",
+            group: "passingZone",
+        },
+        
+        // Qualitative accuracy (mutually exclusive, group: "accuracy")
+        accuracyAll: {
+            label: "All (>90%)",
+            description: "Hit almost all shots",
+            group: "accuracy",
+        },
+        accuracyMost: {
+            label: "Most (75%)",
+            description: "Hit most shots",
+            group: "accuracy",
+        },
+        accuracySome: {
+            label: "Some (50%)",
+            description: "Hit about half of shots",
+            group: "accuracy",
+        },
+        accuracyFew: {
+            label: "Few (25%)",
+            description: "Hit few shots",
+            group: "accuracy",
+        },
+        accuracyLittle: {
+            label: "Little (<25%)",
+            description: "Missed most shots",
+            group: "accuracy",
+        },
+        
+        // Corral usage (independent)
+        usedCorral: {
+            label: "Used Corral",
+            description: "Robot put fuel into the Corral",
+            group: "Corral",
         },
     },
 } as const;
@@ -221,7 +331,6 @@ export const strategyColumns = {
     auto: {
         "auto.avgPoints": { label: "Auto Avg", visible: false, numeric: true },
         "auto.avgFuelScored": { label: "Auto Fuel", visible: true, numeric: true },
-        "auto.mobilityRate": { label: "Mobility %", visible: true, numeric: true, percentage: true },
         "auto.autoClimbRate": { label: "Auto Climb %", visible: true, numeric: true, percentage: true },
     },
     // Teleop stats
@@ -246,7 +355,7 @@ export const strategyColumns = {
  */
 export const strategyPresets: Record<string, string[]> = {
     essential: ["teamNumber", "matchCount", "totalPoints", "overall.avgFuelScored", "endgame.climbSuccessRate"],
-    auto: ["teamNumber", "matchCount", "autoPoints", "auto.avgFuelScored", "auto.autoClimbRate", "auto.mobilityRate"],
+    auto: ["teamNumber", "matchCount", "autoPoints", "auto.avgFuelScored", "auto.autoClimbRate"],
     teleop: ["teamNumber", "matchCount", "teleopPoints", "teleop.avgFuelScored", "teleop.avgFuelPassed"],
     endgame: ["teamNumber", "matchCount", "endgamePoints", "endgame.climbL1Rate", "endgame.climbL2Rate", "endgame.climbL3Rate"],
     basic: ["teamNumber", "eventKey", "matchCount"],
@@ -278,7 +387,6 @@ export const tbaValidation = {
         { key: 'auto-fuel', label: 'Auto Fuel', phase: 'auto' as const },
         { key: 'teleop-fuel', label: 'Teleop Fuel', phase: 'teleop' as const },
         { key: 'endgame', label: 'Endgame Climb', phase: 'endgame' as const },
-        { key: 'mobility', label: 'Auto Mobility', phase: 'auto' as const },
     ],
 
     /**
@@ -368,15 +476,15 @@ export function getActionPoints(actionKey: ActionKey, phase: 'auto' | 'teleop'):
  */
 export function getEndgamePoints(toggleKey: EndgameToggleKey): number {
     const toggle = toggles.endgame[toggleKey];
-    return 'points' in toggle ? toggle.points : 0;
+    return 'points' in toggle ? (toggle.points as number) : 0;
 }
 
 /**
  * Get auto toggle point value (for auto climb)
  */
-export function getAutoTogglePoints(toggleKey: AutoToggleKey): number {
-    const toggle = toggles.auto[toggleKey];
-    return 'points' in toggle ? toggle.points : 0;
+export function getAutoTogglePoints(_toggleKey: AutoToggleKey): number {
+    // Auto toggles are currently empty; return 0 until toggle definitions include points
+    return 0;
 }
 
 /**

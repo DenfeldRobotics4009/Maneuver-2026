@@ -57,7 +57,6 @@ interface TeamStatsTemplate extends TeamStats {
     climbL3Rate: number;
     climbSuccessRate: number;
     defenseRate: number;
-    trenchRate: number;
 
     // Start position percentages
     startPositions: Record<string, number>;
@@ -132,7 +131,6 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
                 climbL3Rate: 0,
                 climbSuccessRate: 0,
                 defenseRate: 0,
-                trenchRate: 0,
                 startPositions: {},
                 matchResults: [],
             };
@@ -154,7 +152,6 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
             acc.climbL2 += gameData?.endgame?.climbL2 ? 1 : 0;
             acc.climbL3 += gameData?.endgame?.climbL3 ? 1 : 0;
             acc.defense += gameData?.teleop?.playedDefense ? 1 : 0;
-            acc.trench += gameData?.teleop?.underTrench ? 1 : 0;
 
             // Track start positions
             const pos = gameData?.auto?.startPosition;
@@ -173,7 +170,6 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
             climbL2: 0,
             climbL3: 0,
             defense: 0,
-            trench: 0,
             startPositionCounts: {} as Record<number, number>,
         });
 
@@ -271,7 +267,6 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
             climbL3Rate: Math.round((totals.climbL3 / matchCount) * 100),
             climbSuccessRate: Math.round((climbSuccessCount / matchCount) * 100),
             defenseRate: Math.round((totals.defense / matchCount) * 100),
-            trenchRate: Math.round((totals.trench / matchCount) * 100),
             startPositions,
             matchResults: matchResults.sort((a, b) => parseInt(a.matchNumber) - parseInt(b.matchNumber)),
         };
@@ -339,7 +334,6 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
                 title: 'Key Rates',
                 tab: 'overview',
                 rates: [
-                    { key: 'mobilityRate', label: 'Mobility Rate' },
                     { key: 'climbSuccessRate', label: 'Climb Success Rate' },
                     { key: 'autoClimbRate', label: 'Auto Climb Rate' },
                 ],
@@ -360,7 +354,6 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
                 tab: 'performance',
                 rates: [
                     { key: 'defenseRate', label: 'Defense Played' },
-                    { key: 'trenchRate', label: 'Used Trench' },
                 ],
             },
         ];

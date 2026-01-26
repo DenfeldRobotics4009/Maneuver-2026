@@ -24,27 +24,40 @@ import {
 
 /**
  * GameData interface for 2026
- * Uses bulk counters for fuel tracking
+ * Uses path-based tracking with counter aggregation
  */
 export interface GameData {
     auto: {
         startPosition: number | null;
-        // Fuel counters (bulk counting)
+        // Path data for visualization/replay
+        autoPath?: any[];       // Full PathWaypoint array
+        // Note: alliance is stored at top-level scoutingEntry.allianceColor
+        // Fuel counters
         fuelScoredCount?: number;
         fuelPassedCount?: number;
+        // Collection counters by location
+        depotCollectCount?: number;
+        outpostCollectCount?: number;
+        // Traversal booleans
+        autoTrench?: boolean;
+        autoBump?: boolean;
+        // Stuck counters (trouble with obstacles)
+        trenchStuckCount?: number;
+        bumpStuckCount?: number;
+        // Other counters
+        foulCommittedCount?: number;
         // Auto toggles
-        leftStartZone?: boolean;
         autoClimbL1?: boolean;
         [key: string]: unknown;
     };
     teleop: {
-        // Fuel counters (bulk counting)
+        // Fuel counters
         fuelScoredCount?: number;
         fuelPassedCount?: number;
+        // Action counters
+        stealCount?: number;
         // Teleop toggles
         playedDefense?: boolean;
-        underTrench?: boolean;
-        overBump?: boolean;
         [key: string]: unknown;
     };
     endgame: {
@@ -54,7 +67,35 @@ export interface GameData {
         climbL3?: boolean;
         // Status
         climbFailed?: boolean;
-        noClimb?: boolean;
+        
+        // Active Phase Roles (multi-select)
+        roleActiveCleanUp?: boolean;
+        roleActivePasser?: boolean;
+        roleActiveDefense?: boolean;
+        roleActiveCycler?: boolean;
+        roleActiveThief?: boolean;
+        
+        // Inactive Phase Roles (multi-select)
+        roleInactiveCleanUp?: boolean;
+        roleInactivePasser?: boolean;
+        roleInactiveDefense?: boolean;
+        roleInactiveCycler?: boolean;
+        roleInactiveThief?: boolean;
+        
+        // Passing zones (multi-select)
+        passedToAlliance?: boolean;
+        passedToNeutral?: boolean;
+        
+        // Qualitative accuracy (mutually exclusive)
+        accuracyAll?: boolean;
+        accuracyMost?: boolean;
+        accuracySome?: boolean;
+        accuracyFew?: boolean;
+        accuracyLittle?: boolean;
+        
+        // Corral usage
+        usedCorral?: boolean;
+        
         [key: string]: unknown;
     };
     [key: string]: unknown;

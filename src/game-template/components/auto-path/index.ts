@@ -4,9 +4,9 @@
  * Components for tracking robot path during autonomous period.
  */
 
-export { AutoPathTracker } from './AutoPathTracker';
+export { AutoFieldMap } from './AutoFieldMap';
 export type {
-    AutoPathTrackerProps,
+    AutoFieldMapProps,
     PathWaypoint,
     PathActionType
-} from './AutoPathTracker';
+} from './AutoFieldMap';

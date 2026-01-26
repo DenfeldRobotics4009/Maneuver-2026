@@ -7,13 +7,13 @@
  * New code should import directly from game-schema.ts.
  */
 
-import { actions, toggles, gameConstants } from "./game-schema";
+import { actions, gameConstants } from "./game-schema";
 
 // Re-export point values derived from schema
 export const AUTO_POINTS = {
     FUEL_SCORED: actions.fuelScored.points.auto ?? 0,
     FUEL_PASSED: actions.fuelPassed.points.auto ?? 0,
-    AUTO_CLIMB_L1: toggles.auto.autoClimbL1.points ?? 0,
+    AUTO_CLIMB_L1: actions.autoClimb.points.auto ?? 0,
 } as const;
 
 export const TELEOP_POINTS = {
@@ -22,11 +22,9 @@ export const TELEOP_POINTS = {
 } as const;
 
 export const ENDGAME_POINTS = {
-    CLIMB_L1: toggles.endgame.climbL1.points,
-    CLIMB_L2: toggles.endgame.climbL2.points,
-    CLIMB_L3: toggles.endgame.climbL3.points,
-    CLIMB_FAILED: toggles.endgame.climbFailed.points,
-    NO_CLIMB: toggles.endgame.noClimb.points,
+    CLIMB_L1: actions.climbL1.points.teleop ?? 0,
+    CLIMB_L2: actions.climbL2.points.teleop ?? 0,
+    CLIMB_L3: actions.climbL3.points.teleop ?? 0,
 } as const;
 
 export const PENALTY_POINTS = {

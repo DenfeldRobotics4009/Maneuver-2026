@@ -81,14 +81,18 @@ export const calculateTeamStats = (teamMatches: ScoutingEntry[]): Omit<TeamStats
     // AUTO PHASE STATS
     // ============================================================================
 
-    // Mobility (left start zone)
-    const mobilityCount = teamMatches.filter(m => m.gameData?.auto?.leftStartZone === true).length;
-
     // Auto climb (new for 2026!)
     const autoClimbCount = teamMatches.filter(m => m.gameData?.auto?.autoClimbL1 === true).length;
 
     // Starting positions
     const startPositions = calculateStartPositions(teamMatches, matchCount);
+
+    // Auto stuck tracking
+    const autoTrenchStuckTotal = sum(teamMatches, m => val(m.gameData?.auto?.trenchStuckCount));
+    const autoBumpStuckTotal = sum(teamMatches, m => val(m.gameData?.auto?.bumpStuckCount));
+    const autoTrenchStuckDurationTotal = sum(teamMatches, m => val(m.gameData?.auto?.trenchStuckDuration));
+    const autoBumpStuckDurationTotal = sum(teamMatches, m => val(m.gameData?.auto?.bumpStuckDuration));
+
 
     // ============================================================================
     // ENDGAME STATS (Tower Climbing - 2026)
@@ -98,7 +102,6 @@ export const calculateTeamStats = (teamMatches: ScoutingEntry[]): Omit<TeamStats
     const climbL2Count = teamMatches.filter(m => m.gameData?.endgame?.climbL2 === true).length;
     const climbL3Count = teamMatches.filter(m => m.gameData?.endgame?.climbL3 === true).length;
     const climbFailedCount = teamMatches.filter(m => m.gameData?.endgame?.climbFailed === true).length;
-    const noClimbCount = teamMatches.filter(m => m.gameData?.endgame?.noClimb === true).length;
     const climbSuccessCount = climbL1Count + climbL2Count + climbL3Count;
 
     // ============================================================================
@@ -106,7 +109,21 @@ export const calculateTeamStats = (teamMatches: ScoutingEntry[]): Omit<TeamStats
     // ============================================================================
 
     const defenseCount = teamMatches.filter(m => m.gameData?.teleop?.playedDefense === true).length;
-    const trenchCount = teamMatches.filter(m => m.gameData?.teleop?.underTrench === true).length;
+
+    // Defense counts by zone
+    const defenseAllianceTotal = sum(teamMatches, m => val(m.gameData?.teleop?.defenseAllianceCount));
+    const defenseNeutralTotal = sum(teamMatches, m => val(m.gameData?.teleop?.defenseNeutralCount));
+    const defenseOpponentTotal = sum(teamMatches, m => val(m.gameData?.teleop?.defenseOpponentCount));
+    const totalDefenseActions = defenseAllianceTotal + defenseNeutralTotal + defenseOpponentTotal;
+
+    // Steal count
+    const stealTotal = sum(teamMatches, m => val(m.gameData?.teleop?.stealCount));
+
+    // Stuck tracking
+    const trenchStuckTotal = sum(teamMatches, m => val(m.gameData?.teleop?.trenchStuckCount));
+    const bumpStuckTotal = sum(teamMatches, m => val(m.gameData?.teleop?.bumpStuckCount));
+    const trenchStuckDurationTotal = sum(teamMatches, m => val(m.gameData?.teleop?.trenchStuckDuration));
+    const bumpStuckDurationTotal = sum(teamMatches, m => val(m.gameData?.teleop?.bumpStuckDuration));
 
     // ============================================================================
     // RAW VALUES (for box plots and distribution charts)
@@ -156,10 +173,15 @@ export const calculateTeamStats = (teamMatches: ScoutingEntry[]): Omit<TeamStats
             avgPoints: round(totalAutoPoints / matchCount),
             avgGamePiece1: round(autoFuelTotal / matchCount),     // Auto fuel
             avgGamePiece2: round(autoFuelPassedTotal / matchCount), // Auto passed
-            mobilityRate: percent(mobilityCount, matchCount),
+            mobilityRate: 0, // Not applicable in 2026
             autoClimbRate: percent(autoClimbCount, matchCount),
             avgFuelScored: round(autoFuelTotal / matchCount),
             startPositions,
+            // 2026-specific stuck stats
+            avgTrenchStuck: round(autoTrenchStuckTotal / matchCount),
+            avgBumpStuck: round(autoBumpStuckTotal / matchCount),
+            avgTrenchStuckDuration: round(autoTrenchStuckDurationTotal / matchCount / 1000, 1), // in seconds
+            avgBumpStuckDuration: round(autoBumpStuckDurationTotal / matchCount / 1000, 1), // in seconds
         },
 
         // Teleop phase
@@ -170,6 +192,13 @@ export const calculateTeamStats = (teamMatches: ScoutingEntry[]): Omit<TeamStats
             avgFuelScored: round(teleopFuelTotal / matchCount),
             avgFuelPassed: round(teleopFuelPassedTotal / matchCount),
             defenseRate: percent(defenseCount, matchCount),
+            // 2026-specific detailed stats
+            totalDefenseActions: round(totalDefenseActions / matchCount),
+            avgSteals: round(stealTotal / matchCount),
+            avgTrenchStuck: round(trenchStuckTotal / matchCount),
+            avgBumpStuck: round(bumpStuckTotal / matchCount),
+            avgTrenchStuckDuration: round(trenchStuckDurationTotal / matchCount / 1000, 1), // in seconds
+            avgBumpStuckDuration: round(bumpStuckDurationTotal / matchCount / 1000, 1), // in seconds
         },
 
         // Endgame phase - tower climbing
@@ -181,7 +210,6 @@ export const calculateTeamStats = (teamMatches: ScoutingEntry[]): Omit<TeamStats
             climbL3Rate: percent(climbL3Count, matchCount),
             climbSuccessRate: percent(climbSuccessCount, matchCount),
             climbFailedRate: percent(climbFailedCount, matchCount),
-            noClimbRate: percent(noClimbCount, matchCount),
             // Legacy compatibility aliases
             climbRate: percent(climbSuccessCount, matchCount),
             parkRate: 0, // Not applicable in 2026
@@ -193,7 +221,7 @@ export const calculateTeamStats = (teamMatches: ScoutingEntry[]): Omit<TeamStats
             option4Rate: 0,
             option5Rate: 0,
             toggle1Rate: percent(climbFailedCount, matchCount),
-            toggle2Rate: percent(noClimbCount, matchCount),
+            toggle2Rate: 0, // Removed noClimb - can be inferred
         },
 
         // Raw values for charts
