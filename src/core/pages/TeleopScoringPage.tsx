@@ -138,6 +138,11 @@ const TeleopScoringPage = () => {
             phase="teleop"
             onAddAction={addScoringAction}
             actions={scoringActions}
+            onUndo={undoLastAction}
+            canUndo={undoHistory.length > 0}
+            matchNumber={states?.inputs?.matchNumber}
+            matchType={states?.inputs?.matchType}
+            teamNumber={states?.inputs?.selectTeam}
             onBack={handleBack}
             onProceed={handleProceed}
           />
