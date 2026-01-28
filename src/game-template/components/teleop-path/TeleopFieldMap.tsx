@@ -635,6 +635,7 @@ function TeleopFieldMapContent() {
                             accumulatedFuel={accumulatedFuel}
                             fuelHistory={fuelHistory}
                             isFieldRotated={isFieldRotated}
+                            alliance={alliance}
                             robotCapacity={robotCapacity}
                             onFuelSelect={handleFuelSelect}
                             onFuelUndo={handleFuelUndo}

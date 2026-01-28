@@ -24,6 +24,7 @@ export interface PendingWaypointPopupProps {
     accumulatedFuel: number;
     fuelHistory: number[];
     isFieldRotated: boolean;
+    alliance: 'red' | 'blue'; // Alliance determines popup position
     robotCapacity?: number; // Fuel capacity from pit scouting
 
     // Fuel callbacks
@@ -53,6 +54,7 @@ export function PendingWaypointPopup({
     accumulatedFuel,
     fuelHistory,
     isFieldRotated,
+    alliance,
     robotCapacity,
     onFuelSelect,
     onFuelUndo,
@@ -85,7 +87,11 @@ export function PendingWaypointPopup({
         : accumulatedFuel > 0;
 
     return (
-        <div className="absolute inset-0 z-40 flex items-center justify-center md:justify-end pointer-events-none p-2">
+        <div className={cn(
+            "absolute inset-0 z-40 flex items-center pointer-events-none p-2",
+            "justify-center",
+            alliance === 'blue' ? "md:justify-end" : "md:justify-start"
+        )}>
             <Card className={cn(
                 "w-full max-w-sm h-fit max-h-[95%] pointer-events-auto shadow-xl flex flex-col border-border/50 bg-background/98 backdrop-blur-sm overflow-hidden gap-2",
                 isFieldRotated && "rotate-180"

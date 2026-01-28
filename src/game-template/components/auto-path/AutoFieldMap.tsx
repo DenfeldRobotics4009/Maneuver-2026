@@ -711,6 +711,7 @@ function AutoFieldMapContent() {
                         fuelHistory={fuelHistory}
                         climbResult={climbResult}
                         isFieldRotated={isFieldRotated}
+                        alliance={alliance}
                         robotCapacity={robotCapacity}
                         onFuelSelect={(value: number) => {
                             setAccumulatedFuel(prev => prev + value);

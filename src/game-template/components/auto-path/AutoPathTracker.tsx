@@ -594,6 +594,7 @@ function AutoPathTrackerContent() {
                         fuelHistory={fuelHistory}
                         climbResult={climbResult}
                         isFieldRotated={isFieldRotated}
+                        alliance={alliance}
                         onFuelSelect={(value: number) => {
                             setAccumulatedFuel(prev => prev + value);
                             setFuelHistory(prev => [...prev, value]);
