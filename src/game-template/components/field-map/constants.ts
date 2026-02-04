@@ -27,7 +27,7 @@ export const FIELD_ELEMENTS: Record<string, FieldElement> = {
     shot_depot_far: { x: 0.09, y: 0.13, label: 'DEPOT_ICON', name: 'Far', scaleWidth: 1 },
 
     // Alliance Zone elements (left side for blue)
-    hub: { x: 0.31, y: 0.5, label: 'HUB_ICON', name: 'Hub Score', scaleWidth: 1 },
+    hub: { x: 0.31, y: 0.5, label: 'HUB_ICON', name: 'Hub', scaleWidth: 1 },
     depot: { x: 0.09, y: 0.29, label: 'DEPOT_ICON', name: 'Depot' },
     outpost: { x: 0.09, y: 0.87, label: 'OUTPOST_ICON', name: 'Outpost' },
     tower: { x: 0.1, y: 0.53, label: 'CLIMB_ICON', name: 'Climb' },

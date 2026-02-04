@@ -74,28 +74,33 @@ function Layout() {
   );
 }
 
-const router = createBrowserRouter([
+const router = createBrowserRouter(
+  [
+    {
+      path: '/',
+      element: <Layout />,
+      children: [
+        {
+          index: true,
+          element: (
+            <HomePage
+              logo="/logo.png"
+              version="2025.1.0"
+              appName="My Scouting App"
+            />
+          )
+        },
+        { path: '/scout', element: <ScoutingPage /> },
+        { path: '/transfer', element: <DataTransferPage /> },
+        { path: '/settings', element: <SettingsPage /> },
+        { path: '*', element: <NotFoundPage /> }
+      ]
+    }
+  ],
   {
-    path: '/Maneuver-2026/',
-    element: <Layout />,
-    children: [
-      {
-        index: true,
-        element: (
-          <HomePage
-            logo="/logo.png"
-            version="2025.1.0"
-            appName="My Scouting App"
-          />
-        )
-      },
-      { path: '/scout', element: <ScoutingPage /> },
-      { path: '/transfer', element: <DataTransferPage /> },
-      { path: '/settings', element: <SettingsPage /> },
-      { path: '*', element: <NotFoundPage /> }
-    ]
+    basename: '/Maneuver-2026',
   }
-]);
+);
 
 export default function App() {
   return <RouterProvider router={router} />;

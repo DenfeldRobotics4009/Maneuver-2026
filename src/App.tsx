@@ -132,7 +132,6 @@ function App() {
   const router = createBrowserRouter(
     createRoutesFromElements(
       <Route
-        path="/Maneuver-2026/"
         element={
           <GameProvider
             config={mockConfig as any}
@@ -197,7 +196,10 @@ function App() {
         {/* Add more routes as needed */}
         <Route path="*" element={<NotFoundPage />} />
       </Route>
-    )
+    ),
+    {
+      basename: '/Maneuver-2026',
+    }
   );
 
   const [showSplash, setShowSplash] = useState(true);
