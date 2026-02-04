@@ -76,7 +76,7 @@ function Layout() {
 
 const router = createBrowserRouter([
   {
-    path: '/',
+    path: '/Maneuver-2026/',
     element: <Layout />,
     children: [
       {

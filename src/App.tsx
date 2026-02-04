@@ -132,7 +132,7 @@ function App() {
   const router = createBrowserRouter(
     createRoutesFromElements(
       <Route
-        path="/"
+        path="/Maneuver-2026/"
         element={
           <GameProvider
             config={mockConfig as any}
