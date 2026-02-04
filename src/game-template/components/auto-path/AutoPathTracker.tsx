@@ -12,7 +12,7 @@
  * - Alliance-aware field mirroring
  */
 
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/core/components/ui/button";
 import { Card } from "@/core/components/ui/card";
 import { Badge } from "@/core/components/ui/badge";
@@ -145,9 +145,6 @@ function AutoPathTrackerContent() {
     } = useAutoScoring();
 
     const fieldCanvasRef = useRef<FieldCanvasRef>(null);
-    const canvasRef = useMemo(() => ({
-        get current() { return fieldCanvasRef.current?.canvas ?? null; }
-    }), []) as React.RefObject<HTMLCanvasElement>;
 
     const stuckTimeoutRef = useRef<any>(null);
 
@@ -297,10 +294,12 @@ function AutoPathTrackerContent() {
             }
             case 'pass':
                 setIsSelectingPass(true); // Enter pass position selection mode
+                handleInteractionEnd(position, elementKey)
                 break;
             case 'collect_neutral':
             case 'collect_alliance':
                 setIsSelectingCollect(true); // Enter collect position selection mode
+                handleInteractionEnd(position, elementKey)
                 break;
             case 'opponent_foul':
                 addWaypoint('foul', 'mid-line-penalty', position);

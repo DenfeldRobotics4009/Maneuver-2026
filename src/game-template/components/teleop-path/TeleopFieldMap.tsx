@@ -11,7 +11,7 @@
  * - Defense and Steal actions in opponent zone
  */
 
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/core/components/ui/button';
 import { cn } from '@/core/lib/utils';
 import { loadPitScoutingByTeamAndEvent } from '@/core/db/database';
@@ -23,7 +23,6 @@ import fieldImage from '@/game-template/assets/2026-field.png';
 // Import shared field-map components
 import {
     type PathWaypoint,
-    type ZoneType,
 
     FIELD_ELEMENTS,
     ZONE_BOUNDS,
@@ -31,7 +30,6 @@ import {
     FieldButton,
     FieldHeader,
     getVisibleElements,
-    ZoneOverlay,
     PendingWaypointPopup,
     SHOT_DISTANCES_KEYS,
     PathActionType,
@@ -108,7 +106,6 @@ function TeleopFieldMapContent() {
         setFuelHistory,
         resetFuel,
         stuckStarts,
-        setStuckStarts,
         isAnyStuck,
         isFieldRotated,
         toggleFieldOrientation,
@@ -121,7 +118,6 @@ function TeleopFieldMapContent() {
         generateId,
         // From TeleopPathContext
         activeZone,
-        setActiveZone,
         climbLevel,
         setClimbLevel,
         climbResult,
@@ -139,11 +135,6 @@ function TeleopFieldMapContent() {
     } = useTeleopScoring();
 
     const fieldCanvasRef = useRef<{ canvas: HTMLCanvasElement | null }>({ canvas: null });
-
-    // Create a ref-like object for usePathDrawing that accesses the canvas element
-    const canvasRef = useMemo(() => ({
-        get current() { return fieldCanvasRef.current?.canvas ?? null; }
-    }), []) as React.RefObject<HTMLCanvasElement>;
 
     const isMobile = useIsMobile();
 
@@ -248,10 +239,6 @@ function TeleopFieldMapContent() {
             setBrokenDownStart(now);
             localStorage.setItem('teleopBrokenDownStart', String(now));
         }
-    };
-
-    const handleZoneClick = (zone: ZoneType) => {
-        setActiveZone(zone);
     };
 
    const handleInteractionEnd = (pos: { x: number; y: number }, shot_action: string, isPassing?: boolean, isCollecting?: boolean) => {

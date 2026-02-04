@@ -12,7 +12,7 @@
  * - Alliance-aware field mirroring
  */
 
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/core/components/ui/button";
 import { Card } from "@/core/components/ui/card";
 import { Badge } from "@/core/components/ui/badge";
@@ -154,15 +154,12 @@ function AutoFieldMapContent() {
     const { transformation } = useGame();
 
     const fieldCanvasRef = useRef<FieldCanvasRef>(null);
-    const canvasRef = useMemo(() => ({
-        get current() { return fieldCanvasRef.current?.canvas ?? null; }
-    }), []) as React.RefObject<HTMLCanvasElement>;
 
     const stuckTimeoutRef = useRef<any>(null);
 
     // Local state (UI-only, not shared)
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [currentZone, setCurrentZone] = useState<ZoneType>('allianceZone');
+    const [currentZone] = useState<ZoneType>('allianceZone');
     const [robotCapacity, setRobotCapacity] = useState<number | undefined>();
     const [actionLogOpen, setActionLogOpen] = useState(false);
     
