@@ -5,8 +5,8 @@
   "theme_color": "#0f172a",
   "background_color": "#0f172a",
   "display": "standalone",
-  "scope": "/",
-  "start_url": "/",
+  "scope": "/Maneuver-2026/",
+  "start_url": "/Maneuver-2026/",
   "categories": ["sports", "utilities", "productivity"],
   "shortcuts": [
     {
