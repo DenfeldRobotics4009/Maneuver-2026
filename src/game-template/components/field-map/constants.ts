@@ -192,7 +192,7 @@ export const TRAVERSAL_ELEMENTS: Record<
         opponentZone: [], // Restricted
     },
     teleop: {
-        allianceZone: ['trench1', 'bump1', 'bump2', 'trench2', 'trench_opponent1', 'bump_opponent1', 'bump_opponent2', 'trench_opponent2'],
+        //allianceZone: ['trench1', 'bump1', 'bump2', 'trench2', 'trench_opponent1', 'bump_opponent1', 'bump_opponent2', 'trench_opponent2'],
     },
 };
 

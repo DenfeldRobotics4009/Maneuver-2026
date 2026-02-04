@@ -29,12 +29,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ShinyShips/maneuver-2026.git"
+    "url": "https://github.com/DenfeldRobotics4009/Maneuver-2026.git"
   },
   "bugs": {
-    "url": "https://github.com/ShinyShips/maneuver-2026/issues"
+    "url": "https://github.com/DenfeldRobotics4009/Maneuver-2026/issues"
   },
-  "homepage": "https://github.com/ShinyShips/maneuver-2026#readme",
+  "homepage": "https://github.com/DenfeldRobotics4009/Maneuver-2026#readme",
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
