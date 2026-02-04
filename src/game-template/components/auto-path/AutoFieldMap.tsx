@@ -34,9 +34,10 @@ import {
     FieldHeader,
     FieldButton,
     PendingWaypointPopup,
-    usePathDrawing,
+
     FieldCanvas,
     type FieldCanvasRef,
+    SHOT_DISTANCES_KEYS,
 } from "@/game-template/components/field-map";
 
 // Context hooks
@@ -197,20 +198,6 @@ function AutoFieldMapContent() {
 
     // Path drawing hook - use current zone bounds
     const currentZoneBounds = ZONE_BOUNDS[currentZone];
-    const {
-        drawingPoints: hookDrawingPoints,
-        handleDrawStart,
-        handleDrawMove,
-        handleDrawEnd,
-        resetDrawing,
-    } = usePathDrawing({
-        canvasRef,
-        isFieldRotated,
-        alliance,
-        isEnabled: isSelectingScore || isSelectingPass || isSelectingCollect,
-        onDrawComplete: (points) => handleInteractionEnd(points),
-        zoneBounds: currentZoneBounds,
-    });
 
     // Auto-fullscreen on mobile on mount
     useEffect(() => {
@@ -218,18 +205,6 @@ function AutoFieldMapContent() {
             setIsFullscreen(true);
         }
     }, [isMobile]);
-
-    // Recalculate current zone whenever actions change (handles undo properly)
-    useEffect(() => {
-        // Start in alliance zone, toggle for each traversal action
-        let zone: ZoneType = 'allianceZone';
-        actions.forEach(action => {
-            if (action.type === 'traversal') {
-                zone = zone === 'allianceZone' ? 'neutralZone' : 'allianceZone';
-            }
-        });
-        setCurrentZone(zone);
-    }, [actions]);
 
 
     // Calculate total score from actions (not just fuel count)
@@ -318,7 +293,7 @@ function AutoFieldMapContent() {
     const handleElementClick = (elementKey: string) => {
         const element = FIELD_ELEMENTS[elementKey as keyof typeof FIELD_ELEMENTS];
         if (!element) return;
-
+        const position = { x: element.x, y: element.y };
         // 1. Handle Persistent Stuck Resolution
         if (stuckStarts[elementKey]) {
             const startTime = stuckStarts[elementKey]!;
@@ -326,7 +301,7 @@ function AutoFieldMapContent() {
 
             // Include duration in the waypoint for analytics
             const stuckDuration = Date.now() - startTime;
-            addWaypoint('traversal', `${type}-stuck`, { x: element.x, y: element.y }, undefined, `${Math.round(stuckDuration / 1000)}s`);
+            addWaypoint('traversal', `${type}-stuck`, position, undefined, `${Math.round(stuckDuration / 1000)}s`);
 
             setStuckStarts(prev => {
                 const next = { ...prev };
@@ -346,13 +321,28 @@ function AutoFieldMapContent() {
             setStuckStarts(prev => ({ ...prev, [elementKey]: Date.now() }));
             return;
         }
-
-        // Block clicks while any popup is active or robot is stuck elsewhere or broken down
-        if (pendingWaypoint || isSelectingScore || isSelectingPass || isSelectingCollect || selectedStartKey || isAnyStuck || isBrokenDown) {
+        if(isSelectingScore){
+            switch (elementKey) {
+                case 'shot_hub':
+                case 'shot_outpost_close':
+                case 'shot_outpost_medium':
+                case 'shot_outpost_far':
+                case 'shot_depot_close':
+                case 'shot_depot_medium':
+                case 'shot_depot_far':
+                    handleInteractionEnd(position, elementKey)
+                    break;
+            }
             return;
         }
 
-        const position = { x: element.x, y: element.y };
+        // Block clicks while any popup is active or robot is stuck elsewhere or broken down
+        if (pendingWaypoint || isSelectingPass || isSelectingCollect || selectedStartKey || isAnyStuck || isBrokenDown) {
+            
+            return;
+        }
+
+       
 
         if (actions.length === 0) {
             const startKeys = ['trench1', 'bump1', 'hub', 'bump2', 'trench2'];
@@ -385,26 +375,22 @@ function AutoFieldMapContent() {
             case 'trench1':
             case 'trench2':
             case 'bump1':
-            case 'bump2': {
+            case 'bump2': 
+
                 const type = elementKey.includes('trench') ? 'trench' : 'bump';
                 addWaypoint('traversal', type, position);
 
-                // Enter potential stuck ("Stuck?") phase for 5s
-                if (stuckTimeoutRef.current) clearTimeout(stuckTimeoutRef.current);
-                setStuckElementKey(elementKey);
-                stuckTimeoutRef.current = setTimeout(() => {
-                    setStuckElementKey(null);
-                    stuckTimeoutRef.current = null;
-                }, 5000);
                 break;
-            }
+            
             case 'pass':
             case 'pass_alliance':
-                setIsSelectingPass(true); // Enter pass position selection mode
+                setIsSelectingPass(true);
+                handleInteractionEnd(position, elementKey, true);
                 break;
             case 'collect_neutral':
             case 'collect_alliance':
-                setIsSelectingCollect(true); // Enter collect position selection mode
+                setIsSelectingCollect(true);
+                handleInteractionEnd(position, elementKey, undefined, true);
                 break;
             case 'opponent_foul':
                 addWaypoint('foul', 'mid-line-penalty', position);
@@ -413,63 +399,40 @@ function AutoFieldMapContent() {
     };
 
     // Consolidated interaction handler
-    const handleInteractionEnd = (points: { x: number; y: number }[]) => {
-        if (points.length === 0) return;
-
-        const isDrag = points.length > 5; // Simple threshold to distinguish tap vs drag
-        const pos = points[0]!;
-
+    const handleInteractionEnd = (pos: { x: number; y: number }, shot_action: string, isPassing?: boolean, isCollecting?: boolean) => {
         if (isSelectingScore) {
             const waypoint: PathWaypoint = {
                 id: generateId(),
                 type: 'score',
-                action: isDrag ? 'shoot-path' : 'hub',
                 position: pos,
+                action: shot_action,
                 fuelDelta: -8, // Default, will be finalized in amount selection
                 amountLabel: '...', // Placeholder until confirmed
                 timestamp: Date.now(),
-                pathPoints: isDrag ? points : undefined,
             };
             setAccumulatedFuel(0);
             setFuelHistory([]);
             setPendingWaypoint(waypoint);
             setIsSelectingScore(false);
-        } else if (isSelectingPass) {
+        } else if (isSelectingPass || isPassing) {
             const waypoint: PathWaypoint = {
                 id: generateId(),
                 type: 'pass',
-                action: isDrag ? 'pass-path' : 'partner',
                 position: pos,
+                action: 'partner',
                 fuelDelta: 0,
                 amountLabel: '...', // Placeholder until confirmed
                 timestamp: Date.now(),
-                pathPoints: isDrag ? points : undefined,
             };
             setAccumulatedFuel(0);
             setFuelHistory([]);
             setPendingWaypoint(waypoint);
             setIsSelectingPass(false);
-        } else if (isSelectingCollect) {
-            // Collect still immediate as per plan or consolidate too? 
-            // The user said: "I don't think we need to track it for collect, we really only care about how many they scored"
-            // So I'll keep collect immediate for speed, but use the unified structure.
-            if (isDrag) {
-                const waypoint: PathWaypoint = {
-                    id: generateId(),
-                    type: 'collect',
-                    action: 'collect-path',
-                    position: pos,
-                    fuelDelta: 8,
-                    timestamp: Date.now(),
-                    pathPoints: points,
-                };
-                onAddAction(waypoint);
-            } else {
-                addWaypoint('collect', 'field', pos, 8);
-            }
+        } else if (isSelectingCollect || isCollecting) {
+
+            addWaypoint('collect', 'field', pos, 8);
             setIsSelectingCollect(false);
         }
-        resetDrawing();
     };
 
     // Undo wrapper that also clears active broken down state
@@ -556,19 +519,15 @@ function AutoFieldMapContent() {
                     ref={fieldCanvasRef}
                     actions={actions}
                     pendingWaypoint={pendingWaypoint}
-                    drawingPoints={hookDrawingPoints}
                     alliance={alliance}
                     isFieldRotated={isFieldRotated}
                     width={canvasDimensions.width}
                     height={canvasDimensions.height}
-                    isSelectingScore={isSelectingScore}
-                    isSelectingPass={isSelectingPass}
-                    isSelectingCollect={isSelectingCollect}
+                    isSelectingScore={false}
+                    isSelectingPass={false}
+                    isSelectingCollect={false}
                     drawConnectedPaths={true}
                     drawingZoneBounds={currentZoneBounds}
-                    onPointerDown={handleDrawStart}
-                    onPointerMove={handleDrawMove}
-                    onPointerUp={handleDrawEnd}
                 />
 
                 {/* Overlay Buttons */}
@@ -620,12 +579,30 @@ function AutoFieldMapContent() {
 
                 {/* Score Selection Overlay */}
                 {isSelectingScore && (
+                    <div className="absolute inset-0 z-20">
+                            {SHOT_DISTANCES_KEYS.map(key => (
+                                <FieldButton
+                                    key={key}
+                                    elementKey={key}
+                                    element={FIELD_ELEMENTS[key]!}
+                                    isVisible={true}
+                                    onClick={handleElementClick}
+                                    alliance={alliance}
+                                    isFieldRotated={isFieldRotated}
+                                    containerWidth={canvasDimensions.width}
+                                    isDisabled={false}
+                                />
+                            ))}
+                        </div>
+                )}
+                {/* Score Selection Overlay Cancel*/}
+                {isSelectingScore && (
                     <div className={cn("absolute inset-0 z-30 flex items-end justify-center pb-4 pointer-events-none", isFieldRotated && "rotate-180")}>
                         <Card className="pointer-events-auto bg-background/95 backdrop-blur-sm border-green-500/50 shadow-2xl py-2 px-3 flex flex-row items-center gap-4">
                             <Badge variant="default" className="bg-green-600">SCORING MODE</Badge>
-                            <span className="text-sm font-medium">Tap or draw where the robot scored</span>
+                            <span className="text-sm font-medium">Select (approximately) Where They Are</span>
                             <Button
-                                onClick={(e) => { e.stopPropagation(); setIsSelectingScore(false); resetDrawing(); }}
+                                onClick={(e) => { e.stopPropagation(); setIsSelectingScore(false); }}
                                 variant="ghost"
                                 size="sm"
                                 className="h-8 w-8 p-0 rounded-full"
@@ -643,7 +620,7 @@ function AutoFieldMapContent() {
                             <Badge variant="default" className="bg-purple-600">PASSING MODE</Badge>
                             <span className="text-sm font-medium">Tap or draw where the robot passed from</span>
                             <Button
-                                onClick={(e) => { e.stopPropagation(); setIsSelectingPass(false); resetDrawing(); }}
+                                onClick={(e) => { e.stopPropagation(); setIsSelectingPass(false);  }}
                                 variant="ghost"
                                 size="sm"
                                 className="h-8 w-8 p-0 rounded-full"
@@ -661,7 +638,7 @@ function AutoFieldMapContent() {
                             <Badge variant="default" className="bg-yellow-600">COLLECT MODE</Badge>
                             <span className="text-sm font-medium">Tap or draw where the robot collected</span>
                             <Button
-                                onClick={(e) => { e.stopPropagation(); setIsSelectingCollect(false); resetDrawing(); }}
+                                onClick={(e) => { e.stopPropagation(); setIsSelectingCollect(false); }}
                                 variant="ghost"
                                 size="sm"
                                 className="h-8 w-8 p-0 rounded-full"
@@ -756,7 +733,6 @@ function AutoFieldMapContent() {
                         }}
                         onCancel={() => {
                             setPendingWaypoint(null);
-                            resetDrawing();
                             setAccumulatedFuel(0);
                             setFuelHistory([]);
                         }}

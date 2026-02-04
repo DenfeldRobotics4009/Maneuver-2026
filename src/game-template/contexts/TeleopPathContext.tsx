@@ -46,6 +46,8 @@ export interface TeleopPathContextValue {
     setIsSelectingScore: (selecting: boolean) => void;
     isSelectingPass: boolean;
     setIsSelectingPass: (selecting: boolean) => void;
+    isSelectingCollect: boolean;
+    setIsSelectingCollect: (selecting: boolean) => void;
 }
 
 export interface TeleopPathProviderProps extends Omit<ScoringProviderProps, 'children'> {
@@ -128,6 +130,7 @@ function TeleopPathProviderInner({
     // Selection modes
     const [isSelectingScore, setIsSelectingScore] = useState(false);
     const [isSelectingPass, setIsSelectingPass] = useState(false);
+    const [isSelectingCollect, setIsSelectingCollect] = useState(false);
 
     // Update dimensions on resize
     useEffect(() => {
@@ -164,6 +167,8 @@ function TeleopPathProviderInner({
         setIsSelectingScore,
         isSelectingPass,
         setIsSelectingPass,
+        isSelectingCollect,
+        setIsSelectingCollect,
     }), [
         activeZone,
         climbLevel,
@@ -174,6 +179,7 @@ function TeleopPathProviderInner({
         drawingPoints,
         isSelectingScore,
         isSelectingPass,
+        isSelectingCollect,
     ]);
 
     return (

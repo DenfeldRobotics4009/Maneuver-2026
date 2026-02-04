@@ -6,14 +6,28 @@
 
 import type { FieldElement, ZoneType } from './types';
 
+//4009 Constants
+
+export const SHOT_DISTANCES_KEYS = ['shot_hub','shot_outpost_close', 'shot_outpost_medium', 'shot_outpost_far','shot_depot_close', 'shot_depot_medium', 'shot_depot_far'] as const;
+
+
 // =============================================================================
 // FIELD ELEMENTS (normalized 0-1, blue alliance perspective)
 // width/height are optional - defaults to 48x48px (w-12 h-12)
 // =============================================================================
 
 export const FIELD_ELEMENTS: Record<string, FieldElement> = {
+    //shot distance elements
+    shot_hub: { x: 0.29, y: 0.5, label: 'HUB_ICON', name: 'At Hub', scaleWidth: 1 },
+    shot_outpost_close: { x: 0.23, y: 0.6, label: 'OUTPOST_ICON', name: 'Close', scaleWidth: 1 },
+    shot_outpost_medium: { x: 0.17, y: 0.72, label: 'OUTPOST_ICON', name: 'Medium', scaleWidth: 1 },
+    shot_outpost_far: { x: 0.09, y: 0.87, label: 'OUTPOST_ICON', name: 'Far', scaleWidth: 1 },
+    shot_depot_close: { x: 0.23, y: 0.4, label: 'DEPOT_ICON', name: 'Close', scaleWidth: 1 },
+    shot_depot_medium: { x: 0.17, y: 0.28, label: 'DEPOT_ICON', name: 'Medium', scaleWidth: 1 },
+    shot_depot_far: { x: 0.09, y: 0.13, label: 'DEPOT_ICON', name: 'Far', scaleWidth: 1 },
+
     // Alliance Zone elements (left side for blue)
-    hub: { x: 0.31, y: 0.5, label: 'HUB_ICON', name: 'Hub', scaleWidth: 1 },
+    hub: { x: 0.31, y: 0.5, label: 'HUB_ICON', name: 'Hub Score', scaleWidth: 1 },
     depot: { x: 0.09, y: 0.29, label: 'DEPOT_ICON', name: 'Depot' },
     outpost: { x: 0.09, y: 0.87, label: 'OUTPOST_ICON', name: 'Outpost' },
     tower: { x: 0.1, y: 0.53, label: 'CLIMB_ICON', name: 'Climb' },
@@ -125,18 +139,14 @@ export const ZONE_COLORS: Record<ZoneType, { red: string; blue: string; overlay:
  */
 export function getFuelOptions(capacity: number = 20) {
     return [
-        { label: '1', value: 1 },
-        { label: '3', value: 3 },
         { label: '8', value: 8 },
-        { label: '10', value: 10 },
-        { label: '25', value: 25 },
-        { label: '50', value: 50 },
         { label: '1/4', value: Math.round(capacity / 4) },
         { label: '1/2', value: Math.round(capacity / 2) },
         { label: '3/4', value: Math.round((capacity * 3) / 4) },
         { label: 'Full', value: capacity },
     ];
 }
+
 
 // Default fuel options for when capacity is unknown
 export const FUEL_OPTIONS = getFuelOptions(20);
@@ -164,14 +174,12 @@ export const PHASE_ZONE_ELEMENTS: Record<
     Partial<Record<ZoneType, string[]>>
 > = {
     auto: {
-        allianceZone: ['hub', 'depot', 'outpost', 'tower', 'collect_alliance', 'pass_alliance'],
-        neutralZone: ['pass', 'collect_neutral', 'opponent_foul'],
-        // Auto doesn't allow opponent zone access
+        allianceZone: ['hub', 'depot', 'outpost', 'tower', 'pass', 'collect_neutral', 'opponent_foul', 'trench1', 'bump1','bump2', 'trench2'],
     },
     teleop: {
-        allianceZone: ['hub', 'tower', 'defense_alliance', 'pass_alliance'],
-        neutralZone: ['pass', 'defense_neutral'],
-        opponentZone: ['defense_opponent', 'pass_opponent', 'steal'],
+        allianceZone: ['hub', 'tower', 'defense_alliance', 'collect_alliance', 'pass', 'defense_neutral', 'collect_neutral', 'defense_opponent', 'pass_opponent', 'steal'],
+        neutralZone: [],
+        opponentZone: [],
     },
 };
 
@@ -181,14 +189,10 @@ export const TRAVERSAL_ELEMENTS: Record<
     Partial<Record<ZoneType, string[]>>
 > = {
     auto: {
-        allianceZone: ['trench1', 'bump1', 'bump2', 'trench2'],
-        neutralZone: ['trench1', 'bump1', 'bump2', 'trench2'], // Hide opponent side in Auto
         opponentZone: [], // Restricted
     },
     teleop: {
-        allianceZone: ['trench1', 'bump1', 'bump2', 'trench2'],
-        neutralZone: ['trench1', 'bump1', 'bump2', 'trench2', 'trench_opponent1', 'bump_opponent1', 'bump_opponent2', 'trench_opponent2'],
-        opponentZone: ['trench_opponent1', 'bump_opponent1', 'bump_opponent2', 'trench_opponent2'],
+        allianceZone: ['trench1', 'bump1', 'bump2', 'trench2', 'trench_opponent1', 'bump_opponent1', 'bump_opponent2', 'trench_opponent2'],
     },
 };
 

@@ -27,13 +27,14 @@ import {
 
     FIELD_ELEMENTS,
     ZONE_BOUNDS,
-    usePathDrawing,
     FieldCanvas,
     FieldButton,
     FieldHeader,
     getVisibleElements,
     ZoneOverlay,
     PendingWaypointPopup,
+    SHOT_DISTANCES_KEYS,
+    PathActionType,
 } from '../field-map';
 
 // Context hooks
@@ -42,6 +43,7 @@ import { TeleopPathProvider, useTeleopScoring } from '@/game-template/contexts';
 // Local sub-components
 import { TeleopActionLog } from './components/TeleopActionLog';
 import { PostClimbProceed } from '../scoring/PostClimbProceed';
+import { Badge, Card } from '@/components';
 
 
 // =============================================================================
@@ -132,6 +134,8 @@ function TeleopFieldMapContent() {
         setIsSelectingScore,
         isSelectingPass,
         setIsSelectingPass,
+        isSelectingCollect,
+        setIsSelectingCollect,
     } = useTeleopScoring();
 
     const fieldCanvasRef = useRef<{ canvas: HTMLCanvasElement | null }>({ canvas: null });
@@ -191,20 +195,6 @@ function TeleopFieldMapContent() {
 
     // Path drawing hook - constrain to active zone bounds
     const currentZoneBounds = activeZone ? ZONE_BOUNDS[activeZone] : undefined;
-    const {
-        drawingPoints,
-        handleDrawStart,
-        handleDrawMove,
-        handleDrawEnd,
-        resetDrawing,
-    } = usePathDrawing({
-        canvasRef,
-        isFieldRotated,
-        alliance,
-        isEnabled: isSelectingScore || isSelectingPass,
-        onDrawComplete: (points) => handleDrawComplete(points),
-        zoneBounds: currentZoneBounds,
-    });
 
     // Auto-fullscreen on mobile
     useEffect(() => {
@@ -229,6 +219,19 @@ function TeleopFieldMapContent() {
     // ==========================================================================
     // HANDLERS
     // ==========================================================================
+    const addWaypoint = useCallback((type: PathActionType, action: string, position: { x: number; y: number }, fuelDelta?: number, amountLabel?: string) => {
+            const waypoint: PathWaypoint = {
+                id: generateId(),
+                type,
+                action,
+                position, // CSS handles mirroring, no need to mirror coordinates
+                fuelDelta,
+                amountLabel,
+                timestamp: Date.now(),
+            };
+            onAddAction(waypoint);
+        }, [onAddAction, generateId]);
+
 
     const handleBrokenDownToggle = () => {
         if (brokenDownStart) {
@@ -251,108 +254,89 @@ function TeleopFieldMapContent() {
         setActiveZone(zone);
     };
 
-    const handleDrawComplete = useCallback((points: { x: number; y: number }[]) => {
-        if (points.length === 0) return;
-
-        const isDrag = points.length > 5;
-        const endPos = points[points.length - 1] || points[0]!;
-
+   const handleInteractionEnd = (pos: { x: number; y: number }, shot_action: string, isPassing?: boolean, isCollecting?: boolean) => {
         if (isSelectingScore) {
             const waypoint: PathWaypoint = {
                 id: generateId(),
                 type: 'score',
-                action: isDrag ? 'shoot-path' : 'hub',
-                position: endPos,
-                fuelDelta: 0,
-                amountLabel: '...',
+                position: pos,
+                action: shot_action,
+                fuelDelta: -8, // Default, will be finalized in amount selection
+                amountLabel: '...', // Placeholder until confirmed
                 timestamp: Date.now(),
-                pathPoints: isDrag ? points : undefined,
-                zone: 'allianceZone',
             };
             setAccumulatedFuel(0);
             setFuelHistory([]);
             setPendingWaypoint(waypoint);
             setIsSelectingScore(false);
-        } else if (isSelectingPass) {
+        } else if (isSelectingPass || isPassing) {
             const waypoint: PathWaypoint = {
                 id: generateId(),
                 type: 'pass',
-                action: isDrag ? 'pass-path' : 'partner',
-                position: endPos,
+                position: pos,
+                action: 'partner',
                 fuelDelta: 0,
-                amountLabel: '...',
+                amountLabel: '...', // Placeholder until confirmed
                 timestamp: Date.now(),
-                pathPoints: isDrag ? points : undefined,
-                zone: activeZone || 'neutralZone',
             };
             setAccumulatedFuel(0);
             setFuelHistory([]);
             setPendingWaypoint(waypoint);
             setIsSelectingPass(false);
+        } else if (isSelectingCollect || isCollecting) {
+
+            addWaypoint('collect', 'field', pos, 8);
+            setIsSelectingCollect(false);
         }
-    }, [isSelectingScore, isSelectingPass, activeZone, generateId, setAccumulatedFuel, setFuelHistory, setPendingWaypoint, setIsSelectingScore, setIsSelectingPass]);
-
+    };
     const handleElementClick = (elementKey: string) => {
-        // Block if popup active or broken down
-        if (pendingWaypoint || isSelectingScore || isSelectingPass || isBrokenDown) return;
-
         const element = FIELD_ELEMENTS[elementKey];
+        
         if (!element) return;
-
-        // Handle Stuck/Obstacle Toggles
-        if (elementKey.includes('trench') || elementKey.includes('bump')) {
-            const isCurrentlyStuck = !!stuckStarts[elementKey];
-            const obstacleType = elementKey.includes('trench') ? 'trench' : 'bump';
-            const obstacleZone: ZoneType = elementKey.includes('opponent') ? 'opponentZone' : 'allianceZone';
-
-            if (isCurrentlyStuck) {
-                // Clearing stuck state - record duration
-                const startTime = stuckStarts[elementKey]!;
-                const duration = Date.now() - startTime;
-
-                onAddAction({
-                    id: generateId(),
-                    type: 'unstuck',
-                    action: `unstuck-${obstacleType}`,
-                    position: { x: element.x, y: element.y },
-                    timestamp: Date.now(),
-                    duration: duration,
-                    obstacleType: obstacleType,
-                    zone: obstacleZone
-                });
-
-                setStuckStarts(prev => {
-                    const next = { ...prev };
-                    delete next[elementKey];
-                    return next;
-                });
-            } else {
-                // Entering stuck state
-                onAddAction({
-                    id: generateId(),
-                    type: 'stuck',
-                    action: `stuck-${obstacleType}`,
-                    position: { x: element.x, y: element.y },
-                    timestamp: Date.now(),
-                    obstacleType: obstacleType,
-                    zone: obstacleZone
-                });
-
-                setStuckStarts(prev => ({
-                    ...prev,
-                    [elementKey]: Date.now()
-                }));
+        const position = { x: element.x, y: element.y };
+        // Block if popup active or broken down
+        if(isSelectingScore){
+            switch (elementKey) {
+                case 'shot_hub':
+                case 'shot_outpost_close':
+                case 'shot_outpost_medium':
+                case 'shot_outpost_far':
+                case 'shot_depot_close':
+                case 'shot_depot_medium':
+                case 'shot_depot_far':
+                    handleInteractionEnd(position, elementKey)
+                    break;
             }
             return;
         }
+        if (pendingWaypoint || isSelectingPass || isBrokenDown) return;
+
+        
+
 
         switch (elementKey) {
+            case 'trench1':
+            case 'trench2':
+            case 'bump1':
+            case 'bump2': 
+
+                const type = elementKey.includes('trench') ? 'trench' : 'bump';
+                addWaypoint('traversal', type, position);
+
+                break;
+            
             case 'hub':
                 setIsSelectingScore(true);
                 break;
             case 'pass':
             case 'pass_alliance':
                 setIsSelectingPass(true);
+                handleInteractionEnd(position, elementKey, true);
+                break;
+            case 'collect_neutral':
+            case 'collect_alliance':
+                setIsSelectingCollect(true);
+                handleInteractionEnd(position, elementKey, undefined, true);
                 break;
             case 'tower':
                 // Open climb selector
@@ -360,7 +344,7 @@ function TeleopFieldMapContent() {
                     id: generateId(),
                     type: 'climb',
                     action: 'attempt',
-                    position: { x: element.x, y: element.y },
+                    position: position,
                     timestamp: Date.now(),
                     zone: 'allianceZone',
                 });
@@ -380,6 +364,7 @@ function TeleopFieldMapContent() {
             case 'pass_opponent':
                 // Pass from opponent zone - same behavior as regular pass
                 setIsSelectingPass(true);
+                handleInteractionEnd(position, elementKey, true);
                 break;
             case 'steal':
                 // Steal - create minimal action (no waypoint needed)
@@ -417,7 +402,6 @@ function TeleopFieldMapContent() {
         setFuelHistory([]);
         setIsSelectingScore(false);
         setIsSelectingPass(false);
-        resetDrawing();
     };
 
     const handleFuelUndo = () => {
@@ -449,7 +433,7 @@ function TeleopFieldMapContent() {
     // ==========================================================================
 
     // Use shared zone element config
-    const visibleElements = getVisibleElements('teleop', activeZone);
+    const visibleElements = getVisibleElements('teleop', 'allianceZone');
 
     // ==========================================================================
     // RENDER
@@ -518,64 +502,20 @@ function TeleopFieldMapContent() {
                         ref={fieldCanvasRef}
                         actions={actions}
                         pendingWaypoint={pendingWaypoint}
-                        drawingPoints={drawingPoints}
                         alliance={alliance}
                         isFieldRotated={isFieldRotated}
                         width={canvasDimensions.width}
                         height={canvasDimensions.height}
-                        isSelectingScore={isSelectingScore}
-                        isSelectingPass={isSelectingPass}
                         drawConnectedPaths={false}
                         drawingZoneBounds={currentZoneBounds}
-                        onPointerDown={handleDrawStart}
-                        onPointerMove={handleDrawMove}
-                        onPointerUp={handleDrawEnd}
                     />
 
-                    {/* Zone Overlays - show inactive zones for quick switching */}
-                    {!pendingWaypoint && !isSelectingScore && !isSelectingPass && (
-                        <>
-                            <ZoneOverlay
-                                zone="allianceZone"
-                                isActive={activeZone === 'allianceZone'}
-                                alliance={alliance}
-                                isDisabled={isAnyStuck}
-                                isFieldRotated={isFieldRotated}
-                                onClick={() => handleZoneClick('allianceZone')}
-                            />
-                            <ZoneOverlay
-                                zone="neutralZone"
-                                isActive={activeZone === 'neutralZone'}
-                                alliance={alliance}
-                                isDisabled={isAnyStuck}
-                                isFieldRotated={isFieldRotated}
-                                onClick={() => handleZoneClick('neutralZone')}
-                            />
-                            <ZoneOverlay
-                                zone="opponentZone"
-                                isActive={activeZone === 'opponentZone'}
-                                alliance={alliance}
-                                isDisabled={isAnyStuck}
-                                isFieldRotated={isFieldRotated}
-                                onClick={() => handleZoneClick('opponentZone')}
-                            />
-                        </>
-                    )}
-
                     {/* Field Buttons (only visible ones for this zone) */}
-                    {activeZone && !pendingWaypoint && !isSelectingScore && !isSelectingPass && (
+                    {!pendingWaypoint && !isSelectingScore && !isSelectingPass && (
                         <>
                             {visibleElements.map((key) => {
                                 let element = FIELD_ELEMENTS[key];
                                 if (!element) return null;
-
-                                // Override obstacle elements to always say "Stuck" in Teleop
-                                if (key.includes('trench') || key.includes('bump')) {
-                                    element = {
-                                        ...element,
-                                        name: 'Stuck'
-                                    };
-                                }
 
                                 // Add counts for defense and steal buttons
                                 let count: number | undefined = undefined;
@@ -604,29 +544,41 @@ function TeleopFieldMapContent() {
                         </>
                     )}
 
-                    {/* Score/Pass Mode Overlay */}
-                    {(isSelectingScore || isSelectingPass) && (
-                        <div className={cn(
-                            "absolute inset-x-0 top-0 z-20 flex items-center justify-center p-2",
-                            "bg-gradient-to-b from-slate-900/90 to-transparent",
-                            isFieldRotated && "bottom-0 top-auto rotate-180 bg-gradient-to-t"
-                        )}>
-                            <div className={cn(
-                                "px-3 py-1.5 rounded-full font-bold text-sm",
-                                isSelectingScore ? "bg-green-600/90 text-white" : "bg-purple-600/90 text-white"
-                            )}>
-                                {isSelectingScore ? 'Tap or draw to shoot' : 'Tap or draw pass path'}
-                            </div>
+                    {/* Score Selection Overlay */}
+                {isSelectingScore && (
+                    <div className="absolute inset-0 z-20">
+                            {SHOT_DISTANCES_KEYS.map(key => (
+                                <FieldButton
+                                    key={key}
+                                    elementKey={key}
+                                    element={FIELD_ELEMENTS[key]!}
+                                    isVisible={true}
+                                    onClick={handleElementClick}
+                                    alliance={alliance}
+                                    isFieldRotated={isFieldRotated}
+                                    containerWidth={canvasDimensions.width}
+                                    isDisabled={false}
+                                />
+                            ))}
+                        </div>
+                )}
+                {/* Score Selection Overlay Cancel*/}
+                {isSelectingScore && (
+                    <div className={cn("absolute inset-0 z-30 flex items-end justify-center pb-4 pointer-events-none", isFieldRotated && "rotate-180")}>
+                        <Card className="pointer-events-auto bg-background/95 backdrop-blur-sm border-green-500/50 shadow-2xl py-2 px-3 flex flex-row items-center gap-4">
+                            <Badge variant="default" className="bg-green-600">SCORING MODE</Badge>
+                            <span className="text-sm font-medium">Select (approximately) Where They Are</span>
                             <Button
+                                onClick={(e) => { e.stopPropagation(); setIsSelectingScore(false); }}
                                 variant="ghost"
                                 size="sm"
-                                onClick={handleFuelCancel}
-                                className="ml-2 text-red-400 hover:text-red-300"
+                                className="h-8 w-8 p-0 rounded-full"
                             >
-                                Cancel
+                                ✕
                             </Button>
-                        </div>
-                    )}
+                        </Card>
+                    </div>
+                )}
 
                     {/* Post-Action Popup (Fuel or Climb) */}
                     {pendingWaypoint && (

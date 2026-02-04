@@ -45,6 +45,7 @@ export interface PathWaypoint {
     climbResult?: ClimbResult;
     duration?: number; // For stuck events (ms)
     obstacleType?: 'bump' | 'trench'; // For stuck events
+    accuracy?: number;
 }
 
 // =============================================================================

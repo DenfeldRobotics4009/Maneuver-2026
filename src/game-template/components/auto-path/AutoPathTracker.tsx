@@ -31,7 +31,7 @@ import {
     FieldHeader,
     FieldButton,
     PendingWaypointPopup,
-    usePathDrawing,
+
     FieldCanvas,
     type FieldCanvasRef,
 } from "@/game-template/components/field-map";
@@ -159,20 +159,6 @@ function AutoPathTrackerContent() {
 
     // Path drawing hook - use current zone bounds
     const currentZoneBounds = ZONE_BOUNDS[currentZone];
-    const {
-        drawingPoints: hookDrawingPoints,
-        handleDrawStart,
-        handleDrawMove,
-        handleDrawEnd,
-        resetDrawing,
-    } = usePathDrawing({
-        canvasRef,
-        isFieldRotated,
-        alliance,
-        isEnabled: isSelectingScore || isSelectingPass || isSelectingCollect,
-        onDrawComplete: (points) => handleInteractionEnd(points),
-        zoneBounds: currentZoneBounds,
-    });
 
     // Auto-fullscreen on mobile on mount
     useEffect(() => {
@@ -323,22 +309,17 @@ function AutoPathTrackerContent() {
     };
 
     // Consolidated interaction handler
-    const handleInteractionEnd = (points: { x: number; y: number }[]) => {
-        if (points.length === 0) return;
-
-        const isDrag = points.length > 5; // Simple threshold to distinguish tap vs drag
-        const pos = points[0]!;
+    const handleInteractionEnd = (pos: { x: number; y: number }, shot_action: string) => {
 
         if (isSelectingScore) {
             const waypoint: PathWaypoint = {
                 id: generateId(),
                 type: 'score',
-                action: isDrag ? 'shoot-path' : 'hub',
                 position: pos,
+                action: shot_action,
                 fuelDelta: -8, // Default, will be finalized in amount selection
                 amountLabel: '...', // Placeholder until confirmed
                 timestamp: Date.now(),
-                pathPoints: isDrag ? points : undefined,
             };
             setAccumulatedFuel(0);
             setFuelHistory([]);
@@ -348,38 +329,21 @@ function AutoPathTrackerContent() {
             const waypoint: PathWaypoint = {
                 id: generateId(),
                 type: 'pass',
-                action: isDrag ? 'pass-path' : 'partner',
                 position: pos,
+                action: 'partner',
                 fuelDelta: 0,
                 amountLabel: '...', // Placeholder until confirmed
                 timestamp: Date.now(),
-                pathPoints: isDrag ? points : undefined,
             };
             setAccumulatedFuel(0);
             setFuelHistory([]);
             setPendingWaypoint(waypoint);
             setIsSelectingPass(false);
         } else if (isSelectingCollect) {
-            // Collect still immediate as per plan or consolidate too? 
-            // The user said: "I don't think we need to track it for collect, we really only care about how many they scored"
-            // So I'll keep collect immediate for speed, but use the unified structure.
-            if (isDrag) {
-                const waypoint: PathWaypoint = {
-                    id: generateId(),
-                    type: 'collect',
-                    action: 'collect-path',
-                    position: pos,
-                    fuelDelta: 8,
-                    timestamp: Date.now(),
-                    pathPoints: points,
-                };
-                onAddAction(waypoint);
-            } else {
-                addWaypoint('collect', 'field', pos, 8);
-            }
+
+            addWaypoint('collect', 'field', pos, 8);
             setIsSelectingCollect(false);
         }
-        resetDrawing();
     };
 
 
@@ -439,7 +403,6 @@ function AutoPathTrackerContent() {
                     ref={fieldCanvasRef}
                     actions={actions}
                     pendingWaypoint={pendingWaypoint}
-                    drawingPoints={hookDrawingPoints}
                     alliance={alliance}
                     isFieldRotated={isFieldRotated}
                     width={canvasDimensions.width}
@@ -449,9 +412,6 @@ function AutoPathTrackerContent() {
                     isSelectingCollect={isSelectingCollect}
                     drawConnectedPaths={true}
                     drawingZoneBounds={currentZoneBounds}
-                    onPointerDown={handleDrawStart}
-                    onPointerMove={handleDrawMove}
-                    onPointerUp={handleDrawEnd}
                 />
 
                 {/* Overlay Buttons */}
@@ -508,7 +468,7 @@ function AutoPathTrackerContent() {
                             <Badge variant="default" className="bg-green-600">SCORING MODE</Badge>
                             <span className="text-sm font-medium">Tap or draw where the robot scored</span>
                             <Button
-                                onClick={(e) => { e.stopPropagation(); setIsSelectingScore(false); resetDrawing(); }}
+                                onClick={(e) => { e.stopPropagation(); setIsSelectingScore(false); }}
                                 variant="ghost"
                                 size="sm"
                                 className="h-8 w-8 p-0 rounded-full"
@@ -526,7 +486,7 @@ function AutoPathTrackerContent() {
                             <Badge variant="default" className="bg-purple-600">PASSING MODE</Badge>
                             <span className="text-sm font-medium">Tap or draw where the robot passed from</span>
                             <Button
-                                onClick={(e) => { e.stopPropagation(); setIsSelectingPass(false); resetDrawing(); }}
+                                onClick={(e) => { e.stopPropagation(); setIsSelectingPass(false); }}
                                 variant="ghost"
                                 size="sm"
                                 className="h-8 w-8 p-0 rounded-full"
@@ -544,7 +504,7 @@ function AutoPathTrackerContent() {
                             <Badge variant="default" className="bg-yellow-600">COLLECT MODE</Badge>
                             <span className="text-sm font-medium">Tap or draw where the robot collected</span>
                             <Button
-                                onClick={(e) => { e.stopPropagation(); setIsSelectingCollect(false); resetDrawing(); }}
+                                onClick={(e) => { e.stopPropagation(); setIsSelectingCollect(false); }}
                                 variant="ghost"
                                 size="sm"
                                 className="h-8 w-8 p-0 rounded-full"
@@ -638,7 +598,6 @@ function AutoPathTrackerContent() {
                         }}
                         onCancel={() => {
                             setPendingWaypoint(null);
-                            resetDrawing();
                             setAccumulatedFuel(0);
                             setFuelHistory([]);
                         }}
