@@ -264,31 +264,31 @@ export const toggles = {
         },
         
         // Qualitative accuracy (mutually exclusive, group: "accuracy")
-        accuracyAll: {
-            label: "All (>90%)",
-            description: "Hit almost all shots",
-            group: "accuracy",
-        },
-        accuracyMost: {
-            label: "Most (75%)",
-            description: "Hit most shots",
-            group: "accuracy",
-        },
-        accuracySome: {
-            label: "Some (50%)",
-            description: "Hit about half of shots",
-            group: "accuracy",
-        },
-        accuracyFew: {
-            label: "Few (25%)",
-            description: "Hit few shots",
-            group: "accuracy",
-        },
-        accuracyLittle: {
-            label: "Little (<25%)",
-            description: "Missed most shots",
-            group: "accuracy",
-        },
+        // accuracyAll: {
+        //     label: "All (>90%)",
+        //     description: "Hit almost all shots",
+        //     group: "accuracy",
+        // },
+        // accuracyMost: {
+        //     label: "Most (75%)",
+        //     description: "Hit most shots",
+        //     group: "accuracy",
+        // },
+        // accuracySome: {
+        //     label: "Some (50%)",
+        //     description: "Hit about half of shots",
+        //     group: "accuracy",
+        // },
+        // accuracyFew: {
+        //     label: "Few (25%)",
+        //     description: "Hit few shots",
+        //     group: "accuracy",
+        // },
+        // accuracyLittle: {
+        //     label: "Little (<25%)",
+        //     description: "Missed most shots",
+        //     group: "accuracy",
+        // },
         
         // Corral usage (independent)
         usedCorral: {

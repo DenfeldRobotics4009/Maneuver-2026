@@ -23,6 +23,8 @@ import type { GameData as CoreGameData } from "@/game-template/scoring";
 // Use 2026 field images
 import fieldMapRedImage from "@/game-template/assets/2026-field-red.png";
 import fieldMapBlueImage from "@/game-template/assets/2026-field-blue.png";
+import { calculateAccuracy } from "./gamification";
+import { m } from "framer-motion";
 
 
 /**
@@ -93,6 +95,19 @@ export interface MatchResult {
     eventKey: string;
     teamNumber?: number;
     scoutName?: string;
+    accuracy: number;
+    avgAccuracyHub: number;
+    avgAccuracyMoving: number;
+    avgAccuracyClose: number;
+    avgAccuracyMedium: number;
+    avgAccuracyFar: number;
+    avgAccuracyTrench: number;
+    hubAccuracies: number[];
+    movingAccuracies: number[];
+    closeAccuracies: number[];
+    farAccuracies: number[];
+    mediumAccuracies: number[];
+    trenchAccuracies: number[],
     totalPoints: number;
     autoPoints: number;
     teleopPoints: number;
@@ -138,6 +153,13 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
                 auto: { avgPoints: 0, avgGamePiece1: 0, avgGamePiece2: 0, mobilityRate: 0, startPositions: [] },
                 teleop: { avgPoints: 0, avgGamePiece1: 0, avgGamePiece2: 0 },
                 endgame: { avgPoints: 0, climbRate: 0, parkRate: 0 },
+                accuracy: 0,
+                avgAccuracyHub: 0,
+                avgAccuracyMoving: 0,
+                avgAccuracyClose: 0,
+                avgAccuracyMedium: 0,
+                avgAccuracyFar: 0,
+                avgAccuracyTrench: 0,
                 // Template-specific fields
                 matchesPlayed: 0,
                 avgTotalPoints: 0,
@@ -190,7 +212,35 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
         // Calculate totals
         const totals = entries.reduce((acc, entry) => {
             const gameData = entry.gameData;
+            //accuracy
+            acc.accuracy += scoringCalculations.calculateAverageAccuracy(entry as any);
+            
+            let hub = scoringCalculations.getActionAccuracies(entry as any, 'shot_hub');
+            acc.avgAccuracyHub += hub.reduce((sum, p) => sum + p, 0) / hub.length;
 
+            let moving = scoringCalculations.getActionAccuracies(entry as any, 'shot_moving');
+            acc.avgAccuracyMoving += moving.reduce((sum, p) => sum + p, 0) / moving.length;
+            
+            let close_depot = scoringCalculations.getActionAccuracies(entry as any, 'shot_depot_close');
+            let close_outpost = scoringCalculations.getActionAccuracies(entry as any, 'shot_outpost_close');
+            acc.avgAccuracyClose += (close_depot.reduce((sum, p) => sum + p, 0) + close_outpost.reduce((sum, p) => sum + p, 0))
+                / (close_depot.length + close_outpost.length);
+            
+            let med_depot = scoringCalculations.getActionAccuracies(entry as any, 'shot_depot_medium');
+            let med_outpost = scoringCalculations.getActionAccuracies(entry as any, 'shot_outpost_medium');
+            acc.avgAccuracyMedium += (med_depot.reduce((sum, p) => sum + p, 0) + med_outpost.reduce((sum, p) => sum + p, 0))
+                / (med_depot.length + med_outpost.length);
+
+            let far_depot = scoringCalculations.getActionAccuracies(entry as any, 'shot_depot_far');
+            let far_outpost = scoringCalculations.getActionAccuracies(entry as any, 'shot_outpost_far');
+            acc.avgAccuracyFar += (far_depot.reduce((sum, p) => sum + p, 0) + far_outpost.reduce((sum, p) => sum + p, 0))
+                / (far_depot.length + far_outpost.length);
+
+            let trench_depot = scoringCalculations.getActionAccuracies(entry as any, 'shot_depot_trench');
+            let trench_outpost = scoringCalculations.getActionAccuracies(entry as any, 'shot_outpost_trench');
+            acc.avgAccuracyTrench += (trench_depot.reduce((sum, p) => sum + p, 0) + trench_outpost.reduce((sum, p) => sum + p, 0))
+                / (trench_depot.length + trench_outpost.length);
+            
             // Fuel counts
             acc.autoFuel += gameData?.auto?.fuelScoredCount || 0;
             acc.teleopFuel += gameData?.teleop?.fuelScoredCount || 0;
@@ -233,6 +283,13 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
 
             return acc;
         }, {
+            accuracy: 0,
+            avgAccuracyHub: 0,
+            avgAccuracyMoving: 0,
+            avgAccuracyClose: 0,
+            avgAccuracyMedium: 0,
+            avgAccuracyFar: 0,
+            avgAccuracyTrench: 0,
             autoFuel: 0,
             teleopFuel: 0,
             autoFuelPassed: 0,
@@ -265,6 +322,33 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
             const autoPoints = scoringCalculations.calculateAutoPoints(entry as any);
             const teleopPoints = scoringCalculations.calculateTeleopPoints(entry as any);
             const endgamePoints = scoringCalculations.calculateEndgamePoints(entry as any);
+            const accuracyAverage = scoringCalculations.calculateAverageAccuracy(entry as any)
+
+            let hub = scoringCalculations.getActionAccuracies(entry as any, 'shot_hub');
+            const avgAccuracyHub = hub.reduce((sum, p) => sum + p, 0) / hub.length;
+
+            let moving = scoringCalculations.getActionAccuracies(entry as any, 'shot_moving');
+            const avgAccuracyMoving = moving.reduce((sum, p) => sum + p, 0) / moving.length;
+            
+            let close_depot = scoringCalculations.getActionAccuracies(entry as any, 'shot_depot_close');
+            let close_outpost = scoringCalculations.getActionAccuracies(entry as any, 'shot_outpost_close');
+            const avgAccuracyClose = (close_depot.reduce((sum, p) => sum + p, 0) + close_outpost.reduce((sum, p) => sum + p, 0))
+                / (close_depot.length + close_outpost.length);
+            
+            let med_depot = scoringCalculations.getActionAccuracies(entry as any, 'shot_depot_medium');
+            let med_outpost = scoringCalculations.getActionAccuracies(entry as any, 'shot_outpost_medium');
+            const avgAccuracyMedium = (med_depot.reduce((sum, p) => sum + p, 0) + med_outpost.reduce((sum, p) => sum + p, 0))
+                / (med_depot.length + med_outpost.length);
+
+            let far_depot = scoringCalculations.getActionAccuracies(entry as any, 'shot_depot_far');
+            let far_outpost = scoringCalculations.getActionAccuracies(entry as any, 'shot_outpost_far');
+            const avgAccuracyFar = (far_depot.reduce((sum, p) => sum + p, 0) + far_outpost.reduce((sum, p) => sum + p, 0))
+                / (far_depot.length + far_outpost.length);
+
+            let trench_depot = scoringCalculations.getActionAccuracies(entry as any, 'shot_depot_trench');
+            let trench_outpost = scoringCalculations.getActionAccuracies(entry as any, 'shot_outpost_trench');
+            const avgAccuracyTrench = (trench_depot.reduce((sum, p) => sum + p, 0) + trench_outpost.reduce((sum, p) => sum + p, 0))
+                / (trench_depot.length + trench_outpost.length);
 
             // Determine climb level
             let climbLevel = 0;
@@ -279,6 +363,19 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
                 alliance: entry.allianceColor,
                 eventKey: entry.eventKey || '',
                 totalPoints: autoPoints + teleopPoints + endgamePoints,
+                accuracy: accuracyAverage,
+                avgAccuracyHub: avgAccuracyHub,
+                avgAccuracyMoving: avgAccuracyMoving,
+                avgAccuracyClose: avgAccuracyClose,
+                avgAccuracyMedium: avgAccuracyMedium,
+                avgAccuracyFar: avgAccuracyFar,
+                avgAccuracyTrench: avgAccuracyTrench,
+                hubAccuracies: hub,
+                movingAccuracies: moving,
+                closeAccuracies: close_depot.concat(close_outpost),
+                farAccuracies: far_depot.concat(far_outpost),
+                mediumAccuracies: med_depot.concat(med_outpost),
+                trenchAccuracies: trench_depot.concat(trench_outpost),
                 autoPoints,
                 teleopPoints,
                 endgamePoints,
@@ -313,6 +410,33 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
         const avgEndgamePoints = matchResults.reduce((sum, m) => sum + m.endgamePoints, 0) / matchCount;
         const climbSuccessCount = totals.climbL1 + totals.climbL2 + totals.climbL3;
 
+        const accuracyValues = matchResults
+            .map(m => scoringCalculations.calculateAverageAccuracy({ gameData: m.gameData } as any))
+            .filter(val => typeof val === "number" && !isNaN(val));
+        const avgAccuracy = accuracyValues.length > 0
+            ? Math.round((accuracyValues.reduce((sum, val) => sum + val, 0) / accuracyValues.length) * 100)
+            : 0; // returns percent 0-100
+        
+        const sumAccuracies = (arr: MatchResult[], key: keyof MatchResult) =>
+            arr.reduce((sum, m) => sum + (Array.isArray(m[key]) ? (m[key] as number[]).reduce((acc, a) => acc + a, 0) : 0), 0);
+
+        const countShots = (arr: MatchResult[], key: keyof MatchResult) =>
+            arr.reduce((count, m) => count + (Array.isArray(m[key]) ? (m[key] as number[]).length : 0), 0);
+
+        const avgAccuracyFunc = (arr: MatchResult[], key: keyof MatchResult) => {
+            const totalAccuracies = sumAccuracies(arr, key);
+            const totalShots = countShots(arr, key);
+            return totalShots > 0 ? (totalAccuracies / totalShots) * 100 : 0;
+        };
+        console.log(matchResults.map(m => m.hubAccuracies));
+        const avgAccuracyHub = avgAccuracyFunc(matchResults, "hubAccuracies");
+        const avgAccuracyMoving = avgAccuracyFunc(matchResults, "movingAccuracies");
+        const avgAccuracyClose = avgAccuracyFunc(matchResults, "closeAccuracies");
+        const avgAccuracyMedium = avgAccuracyFunc(matchResults, "mediumAccuracies");
+        const avgAccuracyFar = avgAccuracyFunc(matchResults, "farAccuracies");
+        const avgAccuracyTrench = avgAccuracyFunc(matchResults, "trenchAccuracies");
+
+        
         // Calculate primary roles (most frequently played, supporting ties)
         const activeRoles = [
             { name: 'Cycler', count: totals.roleActiveCycler },
@@ -345,6 +469,13 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
             autoPoints: matchResults.reduce((sum, m) => sum + m.autoPoints, 0),
             teleopPoints: matchResults.reduce((sum, m) => sum + m.teleopPoints, 0),
             endgamePoints: matchResults.reduce((sum, m) => sum + m.endgamePoints, 0),
+            accuracy: avgAccuracy,
+            accuracyHub: avgAccuracyHub,
+            accuracyMoving: avgAccuracyMoving,
+            accuracyClose: avgAccuracyClose,
+            accuracyMedium: avgAccuracyMedium,
+            accuracyFar: avgAccuracyFar,
+            accuracyTrench: avgAccuracyTrench,
             overall: {
                 avgTotalPoints: Math.round((avgAutoPoints + avgTeleopPoints + avgEndgamePoints) * 10) / 10,
                 totalPiecesScored: Math.round((totals.autoFuel + totals.teleopFuel) / matchCount * 10) / 10,
@@ -555,6 +686,21 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
                     { key: 'roleInactivePasserRate', label: 'Passer' },
                     { key: 'roleInactiveThiefRate', label: 'Thief' },
                     { key: 'roleInactiveDefenseRate', label: 'Defense' },
+                ],
+            },
+            {
+                id: 'accuracy-metrics',
+                title: 'Accuracy Metrics',
+                tab: 'performance',
+                rates: [
+                    { key: 'accuracy', label: 'Overall Average' },
+                    { key: 'accuracyHub', label: 'Hub Average' },
+                    { key: 'accuracyMoving', label: 'Moving Average' },
+                    { key: 'accuracyClose', label: 'Close Average' },
+                    { key: 'accuracyMedium', label: 'Medium Average' },
+                    { key: 'accuracyFar', label: 'Far Average' },
+                    { key: 'accuracyTrench', label: 'Trench Average' },
+
                 ],
             },
             {

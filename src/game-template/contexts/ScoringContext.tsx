@@ -30,6 +30,8 @@ export interface ScoringContextValue {
     // Fuel accumulation
     accumulatedFuel: number;
     setAccumulatedFuel: React.Dispatch<React.SetStateAction<number>>;
+    accuracy: number;
+    setAccuracy: React.Dispatch<React.SetStateAction<number>>;
     fuelHistory: number[];
     setFuelHistory: React.Dispatch<React.SetStateAction<number[]>>;
     resetFuel: () => void;
@@ -118,6 +120,7 @@ export function ScoringProvider({
 
     // Fuel accumulation state
     const [accumulatedFuel, setAccumulatedFuel] = useState(0);
+    const [accuracy, setAccuracy] = useState(0);
     const [fuelHistory, setFuelHistory] = useState<number[]>([]);
 
     // Stuck state - managed internally with localStorage for 2026 game
@@ -159,6 +162,7 @@ export function ScoringProvider({
 
     const resetFuel = useCallback(() => {
         setAccumulatedFuel(0);
+        setAccuracy(0);
         setFuelHistory([]);
     }, []);
 
@@ -188,7 +192,7 @@ export function ScoringProvider({
 
     // Derived calculations
     const totalFuelScored = useMemo(() =>
-        actions.filter(a => a.type === 'score').reduce((sum, a) => sum + Math.abs(a.fuelDelta || 0), 0),
+        actions.filter(a => a.type === 'score').reduce((sum, a) => sum + (Math.abs(a.fuelDelta || 0) * (a.accuracy ?? 1)), 0),
         [actions]
     );
 
@@ -214,11 +218,13 @@ export function ScoringProvider({
         onAddAction(waypoint);
         setPendingWaypoint(null);
         setAccumulatedFuel(0);
+        setAccuracy(0);
         setFuelHistory([]);
     }, [pendingWaypoint, accumulatedFuel, onAddAction]);
 
     const handleFuelCancel = useCallback((resetDrawing?: () => void) => {
         setPendingWaypoint(null);
+        setAccuracy(0);
         setAccumulatedFuel(0);
         setFuelHistory([]);
         resetDrawing?.();
@@ -242,7 +248,10 @@ export function ScoringProvider({
         setFuelHistory,
         resetFuel,
         undoLastFuel,
-
+        
+        //setAccuracy
+        accuracy,
+        setAccuracy,
         // Stuck
         stuckStarts,
         setStuckStarts,

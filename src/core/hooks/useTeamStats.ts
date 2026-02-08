@@ -70,6 +70,7 @@ export const useTeamStats = () => {
                     eventKey: eventFilter || '',
                     matchCount: 0,
                     totalPoints: 0,
+                    accuracy: 0,
                     autoPoints: 0,
                     teleopPoints: 0,
                     endgamePoints: 0,

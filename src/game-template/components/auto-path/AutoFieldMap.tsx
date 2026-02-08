@@ -116,6 +116,8 @@ function AutoFieldMapContent() {
         setPendingWaypoint,
         accumulatedFuel,
         setAccumulatedFuel,
+        accuracy,
+        setAccuracy,
         fuelHistory,
         setFuelHistory,
         stuckStarts,
@@ -320,6 +322,9 @@ function AutoFieldMapContent() {
         }
         if(isSelectingScore){
             switch (elementKey) {
+                case 'shot_moving':
+                case 'shot_depot_trench':
+                case 'shot_outpost_trench':
                 case 'shot_hub':
                 case 'shot_outpost_close':
                 case 'shot_outpost_medium':
@@ -697,10 +702,14 @@ function AutoFieldMapContent() {
                             setAccumulatedFuel(prev => Math.max(0, prev - lastDelta));
                             setFuelHistory(prev => prev.slice(0, -1));
                         }}
+                        onAccuracySelect={(value: number, label: string) => {
+                            setAccuracy(value);
+                        }}
                         onClimbResultSelect={setClimbResult}
                         onConfirm={() => {
                             let delta = 0;
                             let label = '';
+                            let percent = 0;
                             let action = pendingWaypoint.action;
 
                             if (pendingWaypoint.type === 'climb') {
@@ -709,11 +718,13 @@ function AutoFieldMapContent() {
                             } else {
                                 delta = pendingWaypoint.type === 'score' || pendingWaypoint.type === 'pass' ? -accumulatedFuel : 0;
                                 label = pendingWaypoint.type === 'score' ? `+${accumulatedFuel}` : `Pass (${accumulatedFuel})`;
+                                percent = pendingWaypoint.type === 'score' ? accuracy : 1;
                             }
 
                             const finalized: PathWaypoint = {
                                 ...pendingWaypoint,
                                 fuelDelta: delta,
+                                accuracy: percent,
                                 amountLabel: label,
                                 action: action
                             };
@@ -721,6 +732,7 @@ function AutoFieldMapContent() {
                             setPendingWaypoint(null);
                             setAccumulatedFuel(0);
                             setFuelHistory([]);
+                            setAccuracy(0);
                             setClimbResult(null);
 
                             // Show transition popup after climb
@@ -732,6 +744,7 @@ function AutoFieldMapContent() {
                             setPendingWaypoint(null);
                             setAccumulatedFuel(0);
                             setFuelHistory([]);
+                            setAccuracy(0);
                         }}
                     />
                 )}

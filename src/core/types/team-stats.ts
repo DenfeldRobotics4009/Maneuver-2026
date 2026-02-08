@@ -59,8 +59,10 @@ export interface TeamStats {
     };
 
     // Allow additional game-specific fields
+    accuracy: number;
     [key: string]: any;
-}
+    
+}   
 
 /**
  * TeamStats with ID for use in data tables

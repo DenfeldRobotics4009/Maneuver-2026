@@ -55,6 +55,7 @@ export interface GameData {
         [key: string]: unknown;
     };
     teleop: {
+        teleopPath?: any[];      // Full PathWaypoint array for teleop
         // Fuel counters
         fuelScoredCount?: number;
         fuelPassedCount?: number;
@@ -157,6 +158,51 @@ export const scoringCalculations: ScoringCalculations<ScoutingEntry> = {
         });
 
         return points;
+    },
+
+    calculateAverageAccuracy(entry) {
+        const gameData = entry.gameData as GameData;
+        var accuracySum = 0;
+        var num = 0;
+        gameData.teleop.teleopPath?.forEach(waypoint => {
+            if (waypoint.type === 'score') {
+                accuracySum = accuracySum + waypoint.accuracy;
+                num++;
+            }
+        });
+        gameData.auto.autoPath?.forEach(waypoint => {
+            if (waypoint.type === 'score') {
+                accuracySum = accuracySum + waypoint.accuracy;
+                num++;
+            }
+        });
+
+        return num > 0 ? accuracySum / num : 1;
+    },
+
+    getActionAccuracies(entry, action: string){
+        const gameData = entry.gameData as GameData;
+        var accuracies:number[] = [];
+        gameData.teleop.teleopPath?.forEach(waypoint => {
+            if (
+                waypoint.type === 'score' &&
+                waypoint.action === action &&
+                typeof waypoint.accuracy === 'number'
+            ) {
+                accuracies.push(waypoint.accuracy);
+            }
+        });
+        gameData.auto.autoPath?.forEach(waypoint => {
+            if (
+                waypoint.type === 'score' &&
+                waypoint.action === action &&
+                typeof waypoint.accuracy === 'number'
+            ) {
+                accuracies.push(waypoint.accuracy);
+            }
+        });
+
+        return accuracies;
     },
 
     calculateEndgamePoints(entry) {

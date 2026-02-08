@@ -12,8 +12,8 @@ import { Badge } from '@/core/components/ui/badge';
 import { Check, X, Undo2 } from 'lucide-react';
 import { cn } from '@/core/lib/utils';
 import type { PathWaypoint, ClimbLevel, ClimbResult } from './types';
-import { getFuelOptions, CLIMB_LEVELS } from './constants';
-import { useEffect, useRef } from 'react';
+import { getFuelOptions, CLIMB_LEVELS, getAccuracyOptions } from './constants';
+import { useEffect, useRef, useState } from 'react';
 
 // =============================================================================
 // TYPES
@@ -29,8 +29,8 @@ export interface PendingWaypointPopupProps {
 
     // Fuel callbacks
     onFuelSelect: (value: number, label: string) => void;
+    onAccuracySelect: (value: number, label: string) => void;
     onFuelUndo: () => void;
-
     // Climb callbacks
     climbResult: ClimbResult | null;
     onClimbResultSelect: (result: ClimbResult) => void;
@@ -57,6 +57,7 @@ export function PendingWaypointPopup({
     alliance,
     robotCapacity,
     onFuelSelect,
+    onAccuracySelect,
     onFuelUndo,
     climbResult,
     onClimbResultSelect,
@@ -68,10 +69,39 @@ export function PendingWaypointPopup({
 }: PendingWaypointPopupProps) {
     const isClimb = pendingWaypoint.type === 'climb';
     const fuelOptions = getFuelOptions(robotCapacity);
+    const accuracyOptions = getAccuracyOptions();
     
     // Prevent immediate clicks after popup appears
     const justOpenedRef = useRef(true);
     
+    // Remember the last selected accuracy so only one button is selected
+    // and the selection persists across popup openings.
+    const [selectedAccuracy, setSelectedAccuracy] = useState<{ value: number | string; label: string } | null>(null);
+
+    // Key used to persist last accuracy selection
+    const LAST_ACCURACY_KEY = 'maneuver.lastAccuracy';
+
+    // Initialize selection from storage whenever the pending waypoint changes (popup reopen)
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(LAST_ACCURACY_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed && typeof parsed.label === 'string') {
+                    setSelectedAccuracy(parsed);
+                }
+            }
+        } catch (err) {
+            // ignore JSON parse/localStorage errors
+        }
+    }, [pendingWaypoint]);
+
+    // Helper to persist selection
+    const persistSelectedAccuracy = (value: number | string, label: string) => {
+        const data = { value, label };
+        try { localStorage.setItem(LAST_ACCURACY_KEY, JSON.stringify(data)); } catch (e) { /* ignore */ }
+    };
+     
     useEffect(() => {
         justOpenedRef.current = true;
         const timer = setTimeout(() => {
@@ -163,7 +193,8 @@ export function PendingWaypointPopup({
                         )
                     ) : (
                         // Fuel selection
-                        <div className="grid grid-cols-4 gap-2 px-1">
+                        <div >
+                            <div className="grid grid-cols-4 gap-2 px-1">
                             {fuelOptions.map((opt) => (
                                 <Button
                                     key={opt.label}
@@ -181,6 +212,30 @@ export function PendingWaypointPopup({
                                     {opt.label.includes('/') || opt.label === 'Full' ? opt.label : `+${opt.label}`}
                                 </Button>
                             ))}
+                            </div>
+                            <div>Select Accuracy</div>
+                            <div className="grid grid-cols-4 gap-2 p-1">
+                                {accuracyOptions.map((opt) => (
+                                <Button
+                                    key={opt.label}
+                                    variant={selectedAccuracy?.label === opt.label ? 'default' : 'outline'}
+                                     size="lg"
+                                     onClick={(e) => { 
+                                         e.stopPropagation(); 
+                                         if (!justOpenedRef.current) {
+                                            // mark this option as selected (only one) and persist
+                                            setSelectedAccuracy({ value: opt.value, label: opt.label });
+                                            persistSelectedAccuracy(opt.value, opt.label);
+                                            onAccuracySelect(opt.value, opt.label);
+                                         }
+                                     }}
+                                     onPointerDown={(e) => e.stopPropagation()}
+                                     className="h-10 w-full text-xs md:text-sm rounded-lg font-bold transition-all"
+                                 >
+                                     {opt.label.includes('/') || opt.label}
+                                 </Button>
+                             ))}
+                            </div>
                         </div>
                     )}
                 </CardContent>

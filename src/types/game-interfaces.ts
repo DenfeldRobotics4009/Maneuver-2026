@@ -47,6 +47,8 @@ export interface ScoringCalculations<T extends ScoutingEntryBase> {
   calculateTeleopPoints(entry: T): number;
   calculateEndgamePoints(entry: T): number;
   calculateTotalPoints(entry: T): number;
+  calculateAverageAccuracy(entry: T): number;
+  getActionAccuracies(entry: T, action: string): number[];
 }
 
 /**

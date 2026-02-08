@@ -100,6 +100,8 @@ function TeleopFieldMapContent() {
         canUndo,
         pendingWaypoint,
         setPendingWaypoint,
+        accuracy,
+        setAccuracy,
         accumulatedFuel,
         setAccumulatedFuel,
         fuelHistory,
@@ -254,6 +256,7 @@ function TeleopFieldMapContent() {
             };
             setAccumulatedFuel(0);
             setFuelHistory([]);
+            setAccuracy(0);
             setPendingWaypoint(waypoint);
             setIsSelectingScore(false);
         } else if (isSelectingPass || isPassing) {
@@ -268,6 +271,7 @@ function TeleopFieldMapContent() {
             };
             setAccumulatedFuel(0);
             setFuelHistory([]);
+            setAccuracy(0);
             setPendingWaypoint(waypoint);
             setIsSelectingPass(false);
         } else if (isSelectingCollect || isCollecting) {
@@ -284,6 +288,9 @@ function TeleopFieldMapContent() {
         // Block if popup active or broken down
         if(isSelectingScore){
             switch (elementKey) {
+                case 'shot_moving':
+                case 'shot_depot_trench':
+                case 'shot_outpost_trench':
                 case 'shot_hub':
                 case 'shot_outpost_close':
                 case 'shot_outpost_medium':
@@ -376,16 +383,19 @@ function TeleopFieldMapContent() {
             ...pendingWaypoint,
             fuelDelta: pendingWaypoint.type === 'score' ? -accumulatedFuel : accumulatedFuel,
             amountLabel: `${accumulatedFuel}`,
+            accuracy: pendingWaypoint.type === 'score' ? accuracy : 1,
         };
         onAddAction(waypoint);
         setPendingWaypoint(null);
         setAccumulatedFuel(0);
+        setAccuracy(0);
         setFuelHistory([]);
     };
 
     const handleFuelCancel = () => {
         setPendingWaypoint(null);
         setAccumulatedFuel(0);
+        setAccuracy(0);
         setFuelHistory([]);
         setIsSelectingScore(false);
         setIsSelectingPass(false);
@@ -577,6 +587,9 @@ function TeleopFieldMapContent() {
                             alliance={alliance}
                             robotCapacity={robotCapacity}
                             onFuelSelect={handleFuelSelect}
+                            onAccuracySelect={(value: number, label: string) => {
+                                setAccuracy(value);
+                            }}
                             onFuelUndo={handleFuelUndo}
                             climbResult={climbResult}
                             onClimbResultSelect={(result) => setClimbResult(result as any)}

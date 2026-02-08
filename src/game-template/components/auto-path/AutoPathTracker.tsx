@@ -564,6 +564,8 @@ function AutoPathTrackerContent() {
                             setAccumulatedFuel(prev => Math.max(0, prev - lastDelta));
                             setFuelHistory(prev => prev.slice(0, -1));
                         }}
+                        onAccuracySelect={(value: number, label: string) => {
+                        }}
                         onClimbResultSelect={setClimbResult}
                         onConfirm={() => {
                             let delta = 0;

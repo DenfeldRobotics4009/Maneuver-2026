@@ -8,7 +8,7 @@ import type { FieldElement, ZoneType } from './types';
 
 //4009 Constants
 
-export const SHOT_DISTANCES_KEYS = ['shot_hub','shot_outpost_close', 'shot_outpost_medium', 'shot_outpost_far','shot_depot_close', 'shot_depot_medium', 'shot_depot_far'] as const;
+export const SHOT_DISTANCES_KEYS = ['shot_depot_trench', 'shot_outpost_trench','shot_moving','shot_hub','shot_outpost_close', 'shot_outpost_medium', 'shot_outpost_far','shot_depot_close', 'shot_depot_medium', 'shot_depot_far'] as const;
 
 
 // =============================================================================
@@ -18,13 +18,16 @@ export const SHOT_DISTANCES_KEYS = ['shot_hub','shot_outpost_close', 'shot_outpo
 
 export const FIELD_ELEMENTS: Record<string, FieldElement> = {
     //shot distance elements
+    shot_moving: { x: 0.1, y: 0.5, label: 'PASS_ICON', name: 'Driving', scaleWidth: 1.2 },
     shot_hub: { x: 0.29, y: 0.5, label: 'HUB_ICON', name: 'At Hub', scaleWidth: 1 },
     shot_outpost_close: { x: 0.23, y: 0.6, label: 'OUTPOST_ICON', name: 'Close', scaleWidth: 1 },
     shot_outpost_medium: { x: 0.17, y: 0.72, label: 'OUTPOST_ICON', name: 'Medium', scaleWidth: 1 },
     shot_outpost_far: { x: 0.09, y: 0.87, label: 'OUTPOST_ICON', name: 'Far', scaleWidth: 1 },
+    shot_outpost_trench: { x: 0.3, y: 0.87, label: 'OUTPOST_ICON', name: 'Trench', scaleWidth: 1 },
     shot_depot_close: { x: 0.23, y: 0.4, label: 'DEPOT_ICON', name: 'Close', scaleWidth: 1 },
     shot_depot_medium: { x: 0.17, y: 0.28, label: 'DEPOT_ICON', name: 'Medium', scaleWidth: 1 },
     shot_depot_far: { x: 0.09, y: 0.13, label: 'DEPOT_ICON', name: 'Far', scaleWidth: 1 },
+    shot_depot_trench: { x: 0.3, y: 0.13, label: 'DEPOT_ICON', name: 'Trench', scaleWidth: 1 },
 
     // Alliance Zone elements (left side for blue)
     hub: { x: 0.31, y: 0.5, label: 'HUB_ICON', name: 'Hub', scaleWidth: 1 },
@@ -147,6 +150,16 @@ export function getFuelOptions(capacity: number = 20) {
     ];
 }
 
+export function getAccuracyOptions() {
+    return [
+        // Qualitative accuracy (mutually exclusive, group: "accuracy")
+        {label: "All (>90%)", value: 1,},
+        {label: "Most (75%)", value: .75,},
+        {label: "Some (50%)", value: .5,},
+        {label: "Few (25%)", value: .25,},
+        {label: "Little (<25%)", value: .1,}
+    ]
+}
 
 // Default fuel options for when capacity is unknown
 export const FUEL_OPTIONS = getFuelOptions(20);

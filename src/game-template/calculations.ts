@@ -34,7 +34,13 @@ export const calculateTeamStats = (teamMatches: ScoutingEntry[]): Omit<TeamStats
     }
 
     const matchCount = teamMatches.length;
-
+    const accuracyValues = teamMatches.map(m =>
+        scoringCalculations.calculateAverageAccuracy({ gameData: m.gameData } as any)
+    );
+    const avgAccuracy = accuracyValues.length > 0
+        ? Math.round((accuracyValues.reduce((sum, val) => sum + val, 0) / accuracyValues.length) * 100)
+        : 100;
+            
     // ============================================================================
     // POINT CALCULATIONS (using centralized scoring)
     // ============================================================================
@@ -216,7 +222,7 @@ export const calculateTeamStats = (teamMatches: ScoutingEntry[]): Omit<TeamStats
     // ============================================================================
     // RETURN COMPLETE STATS OBJECT
     // ============================================================================
-
+    
     return {
         matchCount,
 
@@ -314,7 +320,7 @@ export const calculateTeamStats = (teamMatches: ScoutingEntry[]): Omit<TeamStats
             toggle1Rate: percent(climbFailedCount, matchCount),
             toggle2Rate: 0, // Removed noClimb - can be inferred
         },
-
+        accuracy: avgAccuracy,
         // Raw values for charts
         rawValues,
     };
