@@ -21,6 +21,8 @@ export interface TeamStats {
         totalPiecesScored: number;
         avgGamePiece1: number;  // Generic: could be coral, notes, cargo, etc.
         avgGamePiece2: number;  // Generic: could be algae, cones, etc.
+        fuelPowerRating: number;
+        accuracy: number;
     };
 
     // Autonomous phase stats

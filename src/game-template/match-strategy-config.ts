@@ -55,6 +55,13 @@ export const matchStrategyConfig: {
                     aggregation: 'average'
                 },
                 {
+                    key: 'fuelPowerRating',
+                    label: 'Fuel Power Rating',
+                    color: 'text-red-600',
+                    format: 'number',
+                    decimals: 1,
+                },
+                {
                     key: 'avgFuelPassed',
                     label: 'Avg Fuel Passed',
                     color: 'text-green-600',

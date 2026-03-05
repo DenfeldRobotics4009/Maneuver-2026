@@ -74,7 +74,7 @@ export const useTeamStats = () => {
                     autoPoints: 0,
                     teleopPoints: 0,
                     endgamePoints: 0,
-                    overall: { avgTotalPoints: 0, totalPiecesScored: 0, avgGamePiece1: 0, avgGamePiece2: 0 },
+                    overall: { avgTotalPoints: 0, totalPiecesScored: 0, avgGamePiece1: 0, avgGamePiece2: 0, fuelPowerRating: 0, accuracy: 0 },
                     auto: { avgPoints: 0, avgGamePiece1: 0, avgGamePiece2: 0, mobilityRate: 0, startPositions: [] },
                     teleop: { avgPoints: 0, avgGamePiece1: 0, avgGamePiece2: 0 },
                     endgame: { avgPoints: 0, climbRate: 0, parkRate: 0 },

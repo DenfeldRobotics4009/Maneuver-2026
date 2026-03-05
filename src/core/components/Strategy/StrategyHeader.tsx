@@ -59,6 +59,7 @@ export const StrategyHeader = ({
             </div>
 
             <div className="flex gap-2 pb-4 items-center">
+                {/* <button onClick={() =>console.log("test")}>Calculate From TBA</button> */}
                 {/* Event Filter */}
                 <GenericSelector
                     label="Select Event"

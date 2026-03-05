@@ -263,6 +263,21 @@ export const toggles = {
             group: "passingZone",
         },
         
+        defenceSkillHigh: {
+            label: "Outstanding Defense",
+            description: "Defence stopped opposing allience Robots from scoring or moving repeatably",
+            group: "defenceSkill",
+        },defenceSkillMedium: {
+            label: "Functional Defence",
+            description: "Defense contributed to the allience. Stopped some opposing allience robots",
+            group: "defenceSkill",
+        },defenceSkillLow: {
+            label: "Ineffective Defense",
+            description: "Attempted to play Defence. Defence was mostly ineffective",
+            group: "defenceSkill",
+        },
+
+
         // Qualitative accuracy (mutually exclusive, group: "accuracy")
         // accuracyAll: {
         //     label: "All (>90%)",
@@ -325,6 +340,8 @@ export const strategyColumns = {
     overall: {
         "rawValues.totalFuel": { label: "Fuel Scored", visible: true, numeric: true },
         "rawValues.totalFuelPassed": { label: "Fuel Passed", visible: false, numeric: true },
+        "fuelPowerRating": { label: "Fuel Power Rating", visible: false, numeric: true },
+        "accuracy": {label: "Average Accuracy", visible: false, numeric: true, percentage: true },
     },
     // Auto stats (use rawValues for user-selectable aggregation)
     auto: {

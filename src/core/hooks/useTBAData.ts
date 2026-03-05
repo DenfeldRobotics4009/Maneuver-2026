@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import {
   type TBAMatch,
   type TBATeam,
+  type FPR,
   getMatchResult,
   getEventTeams,
   storeEventTeams,
@@ -10,6 +11,7 @@ import {
   clearStoredEventTeams,
   setCurrentEvent
 } from '@/core/lib/tba';
+import { Matrix, solve } from "ml-matrix";
 
 export const useTBAData = () => {
   // Match Data Loading state
@@ -23,6 +25,9 @@ export const useTBAData = () => {
   const [eventTeamsLoading, setEventTeamsLoading] = useState(false);
   const [teams, setTeams] = useState<TBATeam[]>([]);
   const [isStored, setIsStored] = useState(false);
+  const [FPR, setFPR] = useState<FPR[]>([]);
+
+  
 
   const fetchMatchDataFromTBA = async (tbaApiKey: string, tbaEventKey: string, rememberForSession: boolean, setApiKey: (key: string) => void) => {
     if (!tbaApiKey.trim()) {
@@ -270,6 +275,113 @@ export const useTBAData = () => {
     }
   };
 
+  function getGamePiecePoints(allianceBreakdown: any): number {
+    return allianceBreakdown.hubScore.totalPoints;
+  }
+
+
+  function buildFPRMatrices(teams: string[], qualMatches:TBAMatch[]): {A: any, b: number[]} {
+
+    const A: number[][] = [];
+    const b: number[] = [];
+
+    const teamIndex = new Map<string, number>();
+    teams.forEach((team, i) => teamIndex.set(team, i));
+
+    for (const match of qualMatches) {
+      if (!match.score_breakdown) continue;
+
+      for (const color of ["red", "blue"] as const) {
+        const alliance = match.alliances[color];
+        const breakdown = match.score_breakdown[color];
+
+        const row = new Array(teams.length).fill(0);
+
+        alliance.team_keys.forEach(team => {
+          const idx = teamIndex.get(team);
+          if (idx !== undefined) row[idx] = 1;
+        });
+
+        A.push(row);
+
+        const gamePiecePoints = getGamePiecePoints(breakdown);
+        b.push(gamePiecePoints);
+      }
+    }
+
+    return { A, b };
+  }
+
+  function solveFPR(A: number[][], b: number[]) {
+    const mA = new Matrix(A);
+    const mB = Matrix.columnVector(b);
+
+    const At = mA.transpose();
+    const AtA = At.mmul(mA);
+    const AtB = At.mmul(mB);
+
+    const x = solve(AtA, AtB);
+
+    return x.to1DArray();
+  }
+
+  const calculateFuelPowerRating = async (tbaApiKey: string, tbaEventKey: string, rememberForSession: boolean, setApiKey: (key: string) => void) => {
+    if (!tbaEventKey.trim()) {
+      toast.error('Please enter an event key');
+      return;
+    }
+
+    if (!tbaApiKey.trim()) {
+      toast.error('Please enter your TBA API key');
+      return;
+    }
+
+    setMatchResultsLoading(true);
+    try {
+      const headers = {
+        "X-TBA-Auth-Key": tbaApiKey,
+      };
+      const response = await fetch(
+        `https://www.thebluealliance.com/api/v3/event/${tbaEventKey.trim()}/matches`,
+        { headers }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+
+      const fullData = await response.json();
+
+      // Filter for qualification matches
+      const qualMatches = fullData.filter((match: TBAMatch) => match.comp_level === "qm");
+      qualMatches.sort((a: TBAMatch, b: TBAMatch) => a.match_number - b.match_number);
+
+      const TBAteams: TBATeam[] = await getEventTeams(tbaApiKey, tbaEventKey);
+      const teams: string[] = TBAteams.map(t => t.key)
+
+      const { A, b } = buildFPRMatrices(teams, qualMatches);
+      const oprValues = solveFPR(A, b);
+
+      var FPR: FPR[] = teams.map((team, i) => ({
+        team: parseInt(team.replace("frc", ""), 10),
+        gamePieceFPR: oprValues[i]
+      }));
+      setFPR(FPR);
+      localStorage.setItem("FPR", JSON.stringify(FPR));
+      // Clear API key from memory if not remembering for session
+      if (!rememberForSession) {
+        setApiKey("");
+        sessionStorage.removeItem("tbaApiKey");
+      }
+    } catch (error) {
+      console.error('Error calculating FPR:', error);
+      toast.error('Failed to load matches. Check the event key and API key.');
+      setFPR([]);
+    } finally {
+      setMatchResultsLoading(false);
+    }
+  };
+
   return {
     // State
     matchDataLoading,
@@ -278,6 +390,7 @@ export const useTBAData = () => {
     matches,
     teams,
     isStored,
+    FPR,
 
     // Actions
     fetchMatchDataFromTBA,
@@ -285,5 +398,6 @@ export const useTBAData = () => {
     loadEventTeams,
     handleStoreTeams,
     handleClearStored,
+    calculateFuelPowerRating,
   };
 };

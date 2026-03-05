@@ -47,6 +47,10 @@ export interface TBATeam {
   country?: string;
 }
 
+export interface FPR{
+   team: number;
+  gamePieceFPR: number | undefined;
+}
 // ============================================================================
 // Helper Functions
 // ============================================================================

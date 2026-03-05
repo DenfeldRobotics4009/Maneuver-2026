@@ -23,8 +23,8 @@ import type { GameData as CoreGameData } from "@/game-template/scoring";
 // Use 2026 field images
 import fieldMapRedImage from "@/game-template/assets/2026-field-red.png";
 import fieldMapBlueImage from "@/game-template/assets/2026-field-blue.png";
-import { calculateAccuracy } from "./gamification";
-import { m } from "framer-motion";
+import { FPR } from "@/core/lib/tba";
+
 
 
 /**
@@ -44,6 +44,7 @@ export interface TeamStatsTemplate extends TeamStats {
     avgAutoPoints: number;
     avgTeleopPoints: number;
     avgEndgamePoints: number;
+    fuelPowerRating: number;
 
     // Fuel averages
     avgAutoFuel: number;
@@ -149,7 +150,7 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
                 autoPoints: 0,
                 teleopPoints: 0,
                 endgamePoints: 0,
-                overall: { avgTotalPoints: 0, totalPiecesScored: 0, avgGamePiece1: 0, avgGamePiece2: 0 },
+                overall: { avgTotalPoints: 0, totalPiecesScored: 0, avgGamePiece1: 0, avgGamePiece2: 0, fuelPowerRating: 0, accuracy: 0},
                 auto: { avgPoints: 0, avgGamePiece1: 0, avgGamePiece2: 0, mobilityRate: 0, startPositions: [] },
                 teleop: { avgPoints: 0, avgGamePiece1: 0, avgGamePiece2: 0 },
                 endgame: { avgPoints: 0, climbRate: 0, parkRate: 0 },
@@ -161,6 +162,7 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
                 avgAccuracyFar: 0,
                 avgAccuracyTrench: 0,
                 // Template-specific fields
+                fuelPowerRating: 0,
                 matchesPlayed: 0,
                 avgTotalPoints: 0,
                 avgAutoPoints: 0,
@@ -206,6 +208,7 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
                 roleInactiveDefenseRate: 0,
                 roleInactiveCyclerRate: 0,
                 roleInactiveThiefRate: 0,
+                defenceSkillRate: 0,
             };
         }
 
@@ -274,6 +277,16 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
             acc.roleInactiveDefense += gameData?.endgame?.roleInactiveDefense ? 1 : 0;
             acc.roleInactiveCycler += gameData?.endgame?.roleInactiveCycler ? 1 : 0;
             acc.roleInactiveThief += gameData?.endgame?.roleInactiveThief ? 1 : 0;
+            
+            acc.defenceSkillHigh += gameData?.endgame?.defenceSkillHigh ? 1 : 0;
+            acc.defenceSkillMedium += gameData?.endgame?.defenceSkillMedium ? 1 : 0;
+            acc.defenceSkillLow += gameData?.endgame?.defenceSkillLow ? 1 : 0;
+            acc.defenceSkillNone += 
+                !gameData?.endgame?.defenceSkillHigh &&
+                !gameData?.endgame?.defenceSkillMedium &&
+                !gameData?.endgame?.defenceSkillLow ? 1 : 0;
+
+            
 
             // Track start positions
             const pos = gameData?.auto?.startPosition;
@@ -315,6 +328,10 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
             roleInactiveDefense: 0,
             roleInactiveCycler: 0,
             roleInactiveThief: 0,
+            defenceSkillHigh: 0,
+            defenceSkillMedium: 0,
+            defenceSkillLow: 0,
+            defenceSkillNone: 0,
         });
 
         // Calculate match results
@@ -376,6 +393,7 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
                 farAccuracies: far_depot.concat(far_outpost),
                 mediumAccuracies: med_depot.concat(med_outpost),
                 trenchAccuracies: trench_depot.concat(trench_outpost),
+                fuelPowerRating: 100,
                 autoPoints,
                 teleopPoints,
                 endgamePoints,
@@ -460,6 +478,19 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
         const topInactiveRoles = inactiveRoles.filter(r => r.count === maxInactiveCount && r.count > 0);
         const primaryInactiveRole = topInactiveRoles.length > 0 ? topInactiveRoles.map(r => r.name).join(' / ') : 'None';
 
+        const getFuelPowerRating = (teamNumber: number):number => {
+            const stored = localStorage.getItem("FPR");
+            if (!stored) return 10;
+            const fprArray: FPR[] = JSON.parse(stored);
+
+            const teamData = fprArray.find(t => t.team === teamNumber);
+
+            return teamData ? teamData.gamePieceFPR ?? 10 : 10;
+        }
+        console.log(totals);
+        console.log(matchCount - totals.defenceSkillNone > 0 ? 
+                Math.round(((totals.defenceSkillHigh + (totals.defenceSkillMedium * .5)) / (matchCount - totals.defenceSkillNone)) * 100)
+                : 0);
         return {
             // Base TeamStats required fields
             teamNumber: entries[0]?.teamNumber || 0,
@@ -481,6 +512,8 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
                 totalPiecesScored: Math.round((totals.autoFuel + totals.teleopFuel) / matchCount * 10) / 10,
                 avgGamePiece1: Math.round(((totals.autoFuel + totals.teleopFuel) / matchCount) * 10) / 10,
                 avgGamePiece2: Math.round((totals.fuelPassed / matchCount) * 10) / 10,
+                fuelPowerRating: getFuelPowerRating(entries[0]?.teamNumber || 0),
+                accuracy: 20,
             },
             auto: {
                 avgPoints: Math.round(avgAutoPoints * 10) / 10,
@@ -502,6 +535,7 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
             // Template-specific fields
             matchesPlayed: matchCount,
             avgTotalPoints: Math.round((avgAutoPoints + avgTeleopPoints + avgEndgamePoints) * 10) / 10,
+            fuelPowerRating: getFuelPowerRating(entries[0]?.teamNumber || 0),
             avgAutoPoints: Math.round(avgAutoPoints * 10) / 10,
             avgTeleopPoints: Math.round(avgTeleopPoints * 10) / 10,
             avgEndgamePoints: Math.round(avgEndgamePoints * 10) / 10,
@@ -546,6 +580,9 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
             roleInactiveDefenseRate: Math.round((totals.roleInactiveDefense / matchCount) * 100),
             roleInactiveCyclerRate: Math.round((totals.roleInactiveCycler / matchCount) * 100),
             roleInactiveThiefRate: Math.round((totals.roleInactiveThief / matchCount) * 100),
+            defenceSkillRate: matchCount - totals.defenceSkillNone > 0 ? 
+                Math.round(((totals.defenceSkillHigh + (totals.defenceSkillMedium * .5)) / (matchCount - totals.defenceSkillNone)) * 100)
+                : 0,
         };
     },
 
@@ -565,6 +602,7 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
                     { key: 'avgAutoPoints', label: 'Auto Points', type: 'number', color: 'blue' },
                     { key: 'avgTeleopPoints', label: 'Teleop Points', type: 'number', color: 'purple' },
                     { key: 'avgEndgamePoints', label: 'Endgame Points', type: 'number', color: 'orange' },
+                    {key: 'fuelPowerRating', label: 'FuelPowerRating', type: 'number', color: 'red'},
                 ],
             },
             {
@@ -708,6 +746,7 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
                 title: 'Other Metrics',
                 tab: 'performance',
                 rates: [
+                    { key: 'defenceSkillRate', label: 'Rate of effective defence in defender matches'},
                     { key: 'defenseRate', label: 'Played Defense (Any Phase)' },
                     { key: 'brokeDownRate', label: 'Broke Down' },
                     { key: 'trenchStuckRate', label: 'Got Stuck in Trench' },
