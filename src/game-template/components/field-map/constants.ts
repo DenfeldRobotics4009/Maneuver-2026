@@ -142,6 +142,7 @@ export const ZONE_COLORS: Record<ZoneType, { red: string; blue: string; overlay:
  */
 export function getFuelOptions(capacity: number = 20) {
     return [
+        { label: '1', value: 1 },
         { label: '8', value: 8 },
         { label: '1/4', value: Math.round(capacity / 4) },
         { label: '1/2', value: Math.round(capacity / 2) },
