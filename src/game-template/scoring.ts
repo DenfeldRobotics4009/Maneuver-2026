@@ -96,10 +96,10 @@ export interface GameData {
         roleInactiveThief?: boolean;
 
         // Inactive Phase Roles (multi-select)
-        defenceSkillHigh?: boolean;
-        defenceSkillMedium?: boolean;
-        defenceSkillLow?: boolean;
-        // defenceSkillNone?: boolean;
+        defenseSkillHigh?: boolean;
+        defenseSkillMedium?: boolean;
+        defenseSkillLow?: boolean;
+        // defenseSkillNone?: boolean;
         
         // Passing zones (multi-select)
         passedToAlliance?: boolean;

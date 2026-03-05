@@ -44,7 +44,7 @@ export function StatusToggles({
     roleActive: 'Active Phase Role(s)',
     roleInactive: 'Inactive Phase Role(s)',
     passingZone: 'Passing Zones',
-    defenceSkill: 'If They Defended, Defence Skill.',
+    defenseSkill: 'If They Defended, defense Skill.',
     accuracy: 'Shooting Accuracy',
     default: 'Status',
   };
@@ -54,7 +54,7 @@ export function StatusToggles({
       {Array.from(grouped.entries()).map(([groupName, items]) => {
         // Check if this is a mutually exclusive group (climb, accuracy)
         // roleActive and roleInactive are multi-select, not mutually exclusive
-        const isMutuallyExclusive = ['climb', 'accuracy', 'defenceSkill'].includes(groupName);
+        const isMutuallyExclusive = ['climb', 'accuracy', 'defenseSkill'].includes(groupName);
         
         return (
           <div key={groupName}>

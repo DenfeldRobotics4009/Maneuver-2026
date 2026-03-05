@@ -587,7 +587,7 @@ function TeleopFieldMapContent() {
                             alliance={alliance}
                             robotCapacity={robotCapacity}
                             onFuelSelect={handleFuelSelect}
-                            onAccuracySelect={(value: number, label: string) => {
+                            onAccuracySelect={(value: number) => {
                                 setAccuracy(value);
                             }}
                             onFuelUndo={handleFuelUndo}

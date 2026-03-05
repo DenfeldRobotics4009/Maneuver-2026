@@ -208,7 +208,7 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
                 roleInactiveDefenseRate: 0,
                 roleInactiveCyclerRate: 0,
                 roleInactiveThiefRate: 0,
-                defenceSkillRate: 0,
+                defenseSkillRate: 0,
             };
         }
 
@@ -278,13 +278,13 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
             acc.roleInactiveCycler += gameData?.endgame?.roleInactiveCycler ? 1 : 0;
             acc.roleInactiveThief += gameData?.endgame?.roleInactiveThief ? 1 : 0;
             
-            acc.defenceSkillHigh += gameData?.endgame?.defenceSkillHigh ? 1 : 0;
-            acc.defenceSkillMedium += gameData?.endgame?.defenceSkillMedium ? 1 : 0;
-            acc.defenceSkillLow += gameData?.endgame?.defenceSkillLow ? 1 : 0;
-            acc.defenceSkillNone += 
-                !gameData?.endgame?.defenceSkillHigh &&
-                !gameData?.endgame?.defenceSkillMedium &&
-                !gameData?.endgame?.defenceSkillLow ? 1 : 0;
+            acc.defenseSkillHigh += gameData?.endgame?.defenseSkillHigh ? 1 : 0;
+            acc.defenseSkillMedium += gameData?.endgame?.defenseSkillMedium ? 1 : 0;
+            acc.defenseSkillLow += gameData?.endgame?.defenseSkillLow ? 1 : 0;
+            acc.defenseSkillNone += 
+                !gameData?.endgame?.defenseSkillHigh &&
+                !gameData?.endgame?.defenseSkillMedium &&
+                !gameData?.endgame?.defenseSkillLow ? 1 : 0;
 
             
 
@@ -328,10 +328,10 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
             roleInactiveDefense: 0,
             roleInactiveCycler: 0,
             roleInactiveThief: 0,
-            defenceSkillHigh: 0,
-            defenceSkillMedium: 0,
-            defenceSkillLow: 0,
-            defenceSkillNone: 0,
+            defenseSkillHigh: 0,
+            defenseSkillMedium: 0,
+            defenseSkillLow: 0,
+            defenseSkillNone: 0,
         });
 
         // Calculate match results
@@ -488,8 +488,8 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
             return teamData ? teamData.gamePieceFPR ?? 10 : 10;
         }
         console.log(totals);
-        console.log(matchCount - totals.defenceSkillNone > 0 ? 
-                Math.round(((totals.defenceSkillHigh + (totals.defenceSkillMedium * .5)) / (matchCount - totals.defenceSkillNone)) * 100)
+        console.log(matchCount - totals.defenseSkillNone > 0 ? 
+                Math.round(((totals.defenseSkillHigh + (totals.defenseSkillMedium * .5)) / (matchCount - totals.defenseSkillNone)) * 100)
                 : 0);
         return {
             // Base TeamStats required fields
@@ -580,8 +580,8 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
             roleInactiveDefenseRate: Math.round((totals.roleInactiveDefense / matchCount) * 100),
             roleInactiveCyclerRate: Math.round((totals.roleInactiveCycler / matchCount) * 100),
             roleInactiveThiefRate: Math.round((totals.roleInactiveThief / matchCount) * 100),
-            defenceSkillRate: matchCount - totals.defenceSkillNone > 0 ? 
-                Math.round(((totals.defenceSkillHigh + (totals.defenceSkillMedium * .5)) / (matchCount - totals.defenceSkillNone)) * 100)
+            defenseSkillRate: matchCount - totals.defenseSkillNone > 0 ? 
+                Math.round(((totals.defenseSkillHigh + (totals.defenseSkillMedium * .5)) / (matchCount - totals.defenseSkillNone)) * 100)
                 : 0,
         };
     },
@@ -746,7 +746,7 @@ export const strategyAnalysis: StrategyAnalysis<ScoutingEntryTemplate> = {
                 title: 'Other Metrics',
                 tab: 'performance',
                 rates: [
-                    { key: 'defenceSkillRate', label: 'Rate of effective defence in defender matches'},
+                    { key: 'defenseSkillRate', label: 'Rate of effective defense in defender matches'},
                     { key: 'defenseRate', label: 'Played Defense (Any Phase)' },
                     { key: 'brokeDownRate', label: 'Broke Down' },
                     { key: 'trenchStuckRate', label: 'Got Stuck in Trench' },

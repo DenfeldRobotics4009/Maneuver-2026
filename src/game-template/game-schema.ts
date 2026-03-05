@@ -263,18 +263,18 @@ export const toggles = {
             group: "passingZone",
         },
         
-        defenceSkillHigh: {
+        defenseSkillHigh: {
             label: "Outstanding Defense",
-            description: "Defence stopped opposing allience Robots from scoring or moving repeatably",
-            group: "defenceSkill",
-        },defenceSkillMedium: {
-            label: "Functional Defence",
+            description: "defense stopped opposing allience Robots from scoring or moving repeatably",
+            group: "defenseSkill",
+        },defenseSkillMedium: {
+            label: "Functional defense",
             description: "Defense contributed to the allience. Stopped some opposing allience robots",
-            group: "defenceSkill",
-        },defenceSkillLow: {
+            group: "defenseSkill",
+        },defenseSkillLow: {
             label: "Ineffective Defense",
-            description: "Attempted to play Defence. Defence was mostly ineffective",
-            group: "defenceSkill",
+            description: "Attempted to play defense. defense was mostly ineffective",
+            group: "defenseSkill",
         },
 
 

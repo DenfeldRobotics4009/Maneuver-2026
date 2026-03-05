@@ -702,7 +702,7 @@ function AutoFieldMapContent() {
                             setAccumulatedFuel(prev => Math.max(0, prev - lastDelta));
                             setFuelHistory(prev => prev.slice(0, -1));
                         }}
-                        onAccuracySelect={(value: number, label: string) => {
+                        onAccuracySelect={(value: number) => {
                             setAccuracy(value);
                         }}
                         onClimbResultSelect={setClimbResult}
